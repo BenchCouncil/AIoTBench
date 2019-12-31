@@ -8,8 +8,9 @@ import androidx.annotation.WorkerThread;
 import java.io.IOException;
 import java.util.List;
 
-import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchModels;
-import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchScoreStatistics;
+import cn.ac.ict.acs.iot.aiot.android.ModelHelper;
+import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /**
@@ -17,9 +18,7 @@ import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
  */
 public class TfLiteModels {
 
-    public static final int HANDLER_DO_IMAGE_CLASSIFICATION = PyTorchModels.HANDLER_DO_IMAGE_CLASSIFICATION;
-
-    public abstract static class TfLiteModel extends PyTorchModels.AbstractModel {
+    public abstract static class TfLiteModel extends ModelHelper.AbstractModel {
 
         protected Classifier classifier;
 
@@ -51,19 +50,15 @@ public class TfLiteModels {
             return classifier.getImageSizeY();
         }
 
-        protected void doImageClassificationContinue2(int imageIndex, PyTorchModels.Status status) {
-            //
-        }
-
         @Override
         @WorkerThread
-        protected PyTorchScoreStatistics doImageClassificationContinue(Bitmap bitmap, int target) {
+        protected StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target) {
             final List<Classifier.Recognition> results = classifier.recognizeImage(bitmap);
-            log.loglnA("ic", "bitmap", bitmap, "ic", "end", PyTorchModels.TimeRecord.time());
+            log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
 
-            log.loglnA("ic", "bitmap", bitmap, "statistics", "start", PyTorchModels.TimeRecord.time());
+            log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
             final float[] scores = getDataAsFloatArray(results);
-            PyTorchScoreStatistics statistics = new PyTorchScoreStatistics(scores);
+            StatisticsScore statistics = new StatisticsScore(scores);
             statistics.calc();
             statistics.updateHit(target);
             return statistics;

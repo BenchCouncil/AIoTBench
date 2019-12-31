@@ -27,8 +27,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".pytorch.PyTorchImageClassify"/>
-        <activity android:name=".tflite.TfLiteImageClassify"/>
+        <activity android:name=".ImageClassifyActivity"/>
     </application>
 
 </manifest>

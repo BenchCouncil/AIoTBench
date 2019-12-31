@@ -1,4 +1,4 @@
-package cn.ac.ict.acs.iot.aiot.android.pytorch;
+package cn.ac.ict.acs.iot.aiot.android;
 
 import androidx.annotation.NonNull;
 
@@ -7,14 +7,14 @@ import cn.ac.ict.acs.iot.aiot.android.util.MathUtil;
 /**
  * Created by alanubu on 19-12-13.
  */
-public class PyTorchScoreStatistics {
+public class StatisticsScore {
 
     public final MathUtil.StatisticsFloat scores;
     public final boolean[] maxHit;
 
     public int target;
 
-    public PyTorchScoreStatistics(float[] scores) {
+    public StatisticsScore(float[] scores) {
         this.scores = new MathUtil.StatisticsFloat(scores);
         this.maxHit = new boolean[this.scores.max.length];
     }
@@ -72,7 +72,7 @@ public class PyTorchScoreStatistics {
             }
         }
 
-        public void updateBy(PyTorchScoreStatistics s) {
+        public void updateBy(StatisticsScore s) {
             count += 1;
             for (int i=0; i<topKMaxHit.length; ++i) {
                 topKMaxHit[i] += s.maxHit[i] ? 1 : 0;

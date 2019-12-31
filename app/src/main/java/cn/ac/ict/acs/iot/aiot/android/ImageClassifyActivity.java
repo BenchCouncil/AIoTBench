@@ -1,4 +1,4 @@
-package cn.ac.ict.acs.iot.aiot.android.tflite;
+package cn.ac.ict.acs.iot.aiot.android;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -13,30 +13,29 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.github.labowenzi.commonj.JUtil;
+
 import java.lang.ref.WeakReference;
 
-import cn.ac.ict.acs.iot.aiot.android.DatasetHelper;
-import cn.ac.ict.acs.iot.aiot.android.ModelHelper;
-import cn.ac.ict.acs.iot.aiot.android.R;
-import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchModels;
-import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchScoreStatistics;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
 /**
  * Created by alanubu on 19-12-25.
  */
-public class TfLiteImageClassify extends AppCompatActivity {
-    public static final String TAG = "tfliteIc";
+public class ImageClassifyActivity extends AppCompatActivity {
+    public static final String TAG = "imageClassify";
 
+    public static final String EXTRA_FRAMEWORK_NAME = "extra_framework_name";
     public static final String EXTRA_MODEL_NAME = "extra_model_name";
     public static final String EXTRA_DATASET_NAME = "extra_dataset_name";
 
+    private FrameworkHelper.Type frameworkType;
     private ModelHelper.Type modelType;
     private DatasetHelper.Type datasetType;
 
-    private TfLiteModels.TfLiteModel model = null;
-    private PyTorchModels.TimeRecord timeRecord = null;
+    private ModelHelper.AbstractModel model = null;
+    private StatisticsTime.TimeRecord timeRecord = null;
 
     private DatasetHelper.IDataset dataset = null;
 
@@ -54,14 +53,16 @@ public class TfLiteImageClassify extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mHandler = new MHandler(this);
         Intent intent = getIntent();
+        frameworkType = FrameworkHelper.Type.get(intent.getStringExtra(EXTRA_FRAMEWORK_NAME));
         modelType = ModelHelper.Type.get(intent.getStringExtra(EXTRA_MODEL_NAME));
         datasetType = DatasetHelper.Type.get(intent.getStringExtra(EXTRA_DATASET_NAME));
-        if (modelType == null || datasetType == null) {
+        if (frameworkType == null || modelType == null || datasetType == null) {
             Util.showToast("wrong model or dataset", this);
             finish();
             return;
         }
-        log = LogUtil.Log.inLogDir("tflite.log");
+        log = LogUtil.Log.inLogDir("ic_" + frameworkType.name().toLowerCase() + ".log");
+        log.logln("framework=" + frameworkType);
         log.logln("model=" + modelType);
         log.logln("dataset=" + datasetType);
         if (!loadModel()) {
@@ -78,25 +79,21 @@ public class TfLiteImageClassify extends AppCompatActivity {
     }
 
     private boolean loadModel() {
-        if (modelType == ModelHelper.Type.E_MOBILE_NET_FLOAT
-                || modelType == ModelHelper.Type.E_MOBILE_NET_QUANTIZED) {
-            if (modelType == ModelHelper.Type.E_MOBILE_NET_FLOAT) {
-                model = new TfLiteModels.MobileNetFloat(this, log);
-            } else {
-                model = new TfLiteModels.MobileNetQuantized(this, log);
-            }
-            if (!model.isStatusOk()) {
-                Util.showToast("load model err", this);
-                finish();
-                return false;
-            }
-            timeRecord = model.timeRecord;
-            log.logln("load model: " + timeRecord.loadModel);
-        } else {
-            Util.showToast(R.string.not_implemented, this);
-            finish();
+        if (frameworkType == null) {
+            Util.showToast("no framework", this);
             return false;
         }
+        if (!JUtil.inArray(modelType, frameworkType.getAvailableModels())) {
+            Util.showToast(R.string.not_implemented, this);
+            return false;
+        }
+        model = frameworkType.getModelGenerator().genModel(this, log, modelType);
+        if (model == null || !model.isStatusOk()) {
+            Util.showToast("load model err", this);
+            return false;
+        }
+        timeRecord = model.timeRecord;
+        log.logln("load model: " + timeRecord.loadModel);
         return true;
     }
 
@@ -122,7 +119,7 @@ public class TfLiteImageClassify extends AppCompatActivity {
     }
 
     private void initViewById() {
-        setContentView(R.layout.activity_tflite_image_classify);
+        setContentView(R.layout.activity_image_classify);
         mImageInfo = findViewById(R.id.tv_image_info);
         mResult = findViewById(R.id.tv_result);
         mTimeRecord = findViewById(R.id.tv_time_record);
@@ -140,7 +137,7 @@ public class TfLiteImageClassify extends AppCompatActivity {
     private void doImageClassification() {
         if (model != null) {
             model.handler = mHandler;
-            model.what = TfLiteModels.HANDLER_DO_IMAGE_CLASSIFICATION;
+            model.what = ModelHelper.HANDLER_DO_IMAGE_CLASSIFICATION;
             if (dataset != null) {
                 model.dataset = dataset;
             } else {
@@ -153,15 +150,15 @@ public class TfLiteImageClassify extends AppCompatActivity {
         }
     }
     private void onImageClassified(int process, Object obj) {
-        PyTorchModels.Status status = null;
-        if (obj!= null && !(obj instanceof PyTorchModels.Status)) {
+        ModelHelper.Status status = null;
+        if (obj!= null && !(obj instanceof ModelHelper.Status)) {
             Log.e("image classified data", "null or wrong type");
         } else {
-            status = (PyTorchModels.Status) obj;
+            status = (ModelHelper.Status) obj;
         }
         onImageClassified(process, status);
     }
-    private void onImageClassified(int process, PyTorchModels.Status status) {
+    private void onImageClassified(int process, ModelHelper.Status status) {
         int processOri = process;
         boolean allDone = false;
         int total = dataset.size();
@@ -177,7 +174,7 @@ public class TfLiteImageClassify extends AppCompatActivity {
         if (allDone) {
             result.append('\n').append("all done");
         }
-        PyTorchScoreStatistics.HitStatistic statistics = status == null ? null : status.statistics;
+        StatisticsScore.HitStatistic statistics = status == null ? null : status.statistics;
         if (statistics == null) {
             result.append("\nnull");
         } else {
@@ -225,9 +222,9 @@ public class TfLiteImageClassify extends AppCompatActivity {
     }
 
     private static class MHandler extends Handler {
-        protected final WeakReference<TfLiteImageClassify> mTarget;
+        protected final WeakReference<ImageClassifyActivity> mTarget;
 
-        public MHandler(TfLiteImageClassify target) {
+        public MHandler(ImageClassifyActivity target) {
             mTarget = new WeakReference<>(target);
         }
 
@@ -236,7 +233,7 @@ public class TfLiteImageClassify extends AppCompatActivity {
             super.handleMessage(msg);
             int what = msg.what;
             switch (what) {
-                case PyTorchModels.HANDLER_DO_IMAGE_CLASSIFICATION: {
+                case ModelHelper.HANDLER_DO_IMAGE_CLASSIFICATION: {
                     onImageClassified(msg);
                     break;
                 }
@@ -244,7 +241,7 @@ public class TfLiteImageClassify extends AppCompatActivity {
         }
 
         private void onImageClassified(Message msg) {
-            TfLiteImageClassify target = mTarget.get();
+            ImageClassifyActivity target = mTarget.get();
             if (target != null) {
                 target.onImageClassified(msg.arg2, msg.obj);
             }

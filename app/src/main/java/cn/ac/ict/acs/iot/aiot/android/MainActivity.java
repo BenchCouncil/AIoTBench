@@ -13,8 +13,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchImageClassify;
-import cn.ac.ict.acs.iot.aiot.android.tflite.TfLiteImageClassify;
 import cn.ac.ict.acs.iot.aiot.android.util.DialogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -173,36 +171,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onGo() {
-        if (frameworkType == FrameworkHelper.Type.E_PY_TORCH) {
-            onGoPyTorch();
-        } else if (frameworkType == FrameworkHelper.Type.E_CAFFE_2) {
-            onGoCaffe2();
-        } else if (frameworkType == FrameworkHelper.Type.E_TENSORFLOW_LITE) {
-            onGoTensorflowLite();
+        if (frameworkType == FrameworkHelper.Type.E_PY_TORCH
+                || frameworkType == FrameworkHelper.Type.E_CAFFE_2
+                || frameworkType == FrameworkHelper.Type.E_TENSORFLOW_LITE) {
+            Intent intent = new Intent(MainActivity.this, ImageClassifyActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString(ImageClassifyActivity.EXTRA_FRAMEWORK_NAME, frameworkType.getValue());
+            bundle.putString(ImageClassifyActivity.EXTRA_MODEL_NAME, modelType.getValue());
+            bundle.putString(ImageClassifyActivity.EXTRA_DATASET_NAME, datasetType.getValue());
+            intent.putExtras(bundle);
+            startActivity(intent);
         } else {
             Util.showToast("no framework", this);
         }
-    }
-
-    private void onGoPyTorch() {
-        Intent intent = new Intent(MainActivity.this, PyTorchImageClassify.class);
-        Bundle bundle = new Bundle();
-        bundle.putString(PyTorchImageClassify.EXTRA_MODEL_NAME, modelType.getValue());
-        bundle.putString(PyTorchImageClassify.EXTRA_DATASET_NAME, datasetType.getValue());
-        intent.putExtras(bundle);
-        startActivity(intent);
-    }
-
-    private void onGoCaffe2() {
-        // todo
-    }
-
-    private void onGoTensorflowLite() {
-        Intent intent = new Intent(MainActivity.this, TfLiteImageClassify.class);
-        Bundle bundle = new Bundle();
-        bundle.putString(TfLiteImageClassify.EXTRA_MODEL_NAME, modelType.getValue());
-        bundle.putString(TfLiteImageClassify.EXTRA_DATASET_NAME, datasetType.getValue());
-        intent.putExtras(bundle);
-        startActivity(intent);
     }
 }

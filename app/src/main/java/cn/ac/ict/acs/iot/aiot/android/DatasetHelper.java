@@ -7,6 +7,8 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.github.labowenzi.commonj.JEnumUtil;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import cn.ac.ict.acs.iot.aiot.android.util.EnumUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
 /**
@@ -28,7 +29,7 @@ public class DatasetHelper {
     private static final String TAG = "dataset";
 
     // java enum String 'Type{demo, imageNet, user_selected_file,}'
-    public enum Type implements EnumUtil.EnumString {
+    public enum Type implements JEnumUtil.EnumString {
         E_DEMO("demo") {
             @Override
             public IDataset getDataset(Context context) {

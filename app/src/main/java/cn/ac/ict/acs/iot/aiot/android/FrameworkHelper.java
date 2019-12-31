@@ -1,30 +1,39 @@
 package cn.ac.ict.acs.iot.aiot.android;
 
+import android.app.Activity;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import cn.ac.ict.acs.iot.aiot.android.util.EnumUtil;
+import com.github.labowenzi.commonj.JEnumUtil;
+
+import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchModels;
+import cn.ac.ict.acs.iot.aiot.android.tflite.TfLiteModels;
+import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /**
  * Created by alanubu on 19-12-30.
  */
 public class FrameworkHelper {
-    public enum Type implements EnumUtil.EnumString {
+    public enum Type implements JEnumUtil.EnumString {
         E_PY_TORCH("PyTorch",
                 new ModelHelper.Type[]{
                         ModelHelper.Type.E_MOBILE_NET,
                         ModelHelper.Type.E_RES_NET,
-                }, null),
+                }, null,
+                new PyTorchModelGenerator()),
         E_CAFFE_2("Caffe2",
                 new ModelHelper.Type[]{
                         ModelHelper.Type.E_MOBILE_NET,
                         ModelHelper.Type.E_RES_NET,
-                }, null),
+                }, null,
+                null),
         E_TENSORFLOW_LITE("tensorflow_lite",
                 new ModelHelper.Type[]{
                         ModelHelper.Type.E_MOBILE_NET_FLOAT,
                         ModelHelper.Type.E_MOBILE_NET_QUANTIZED,
-                }, null),
+                }, null,
+                new TfLiteModelGenerator()),
         ;
 
         @NonNull
@@ -33,8 +42,9 @@ public class FrameworkHelper {
         private final String[] availableModelStrings;
         private final DatasetHelper.Type[] availableDatasets;
         private final String[] availableDatasetStrings;
+        private final IModelGenerator modelGenerator;
 
-        Type(@NonNull String value, ModelHelper.Type[] availableModels, DatasetHelper.Type[] availableDatasets) {
+        Type(@NonNull String value, ModelHelper.Type[] availableModels, DatasetHelper.Type[] availableDatasets, IModelGenerator modelGenerator) {
             this.value = value;
             if (availableModels == null) {
                 availableModels = new ModelHelper.Type[]{
@@ -59,6 +69,7 @@ public class FrameworkHelper {
             for (int i=0; i<this.availableDatasetStrings.length; ++i) {
                 this.availableDatasetStrings[i] = this.availableDatasets[i].getValue();
             }
+            this.modelGenerator = modelGenerator;
         }
 
         public ModelHelper.Type[] getAvailableModels() {
@@ -72,6 +83,10 @@ public class FrameworkHelper {
         }
         public String[] getAvailableDatasetStrings() {
             return availableDatasetStrings;
+        }
+
+        public IModelGenerator getModelGenerator() {
+            return modelGenerator;
         }
 
         @NonNull
@@ -109,6 +124,32 @@ public class FrameworkHelper {
                 if (item.getValue().equals(value)) {
                     return item;
                 }
+            }
+            return null;
+        }
+    }
+
+    public interface IModelGenerator {
+        ModelHelper.AbstractModel genModel(Activity activity, LogUtil.Log log, ModelHelper.Type model);
+    }
+    public static class PyTorchModelGenerator implements IModelGenerator {
+        @Override
+        public ModelHelper.AbstractModel genModel(Activity activity, LogUtil.Log log, ModelHelper.Type model) {
+            if (model == ModelHelper.Type.E_MOBILE_NET) {
+                return new PyTorchModels.MobileNet_925(activity, log);
+            } else if (model == ModelHelper.Type.E_RES_NET){
+                return new PyTorchModels.ResNet18(activity, log);
+            }
+            return null;
+        }
+    }
+    public static class TfLiteModelGenerator implements IModelGenerator {
+        @Override
+        public ModelHelper.AbstractModel genModel(Activity activity, LogUtil.Log log, ModelHelper.Type model) {
+            if (model == ModelHelper.Type.E_MOBILE_NET_FLOAT) {
+                return new TfLiteModels.MobileNetFloat(activity, log);
+            } else if (model == ModelHelper.Type.E_MOBILE_NET_QUANTIZED){
+                return new TfLiteModels.MobileNetQuantized(activity, log);
             }
             return null;
         }
