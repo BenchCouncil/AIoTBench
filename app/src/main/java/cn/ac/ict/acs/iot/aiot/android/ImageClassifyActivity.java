@@ -61,7 +61,10 @@ public class ImageClassifyActivity extends AppCompatActivity {
             finish();
             return;
         }
-        log = LogUtil.Log.inLogDir("ic_" + frameworkType.name().toLowerCase() + ".log");
+        String fmd = frameworkType.name().toLowerCase()
+                + '_' + modelType.name().toLowerCase()
+                + '_' + datasetType.name().toLowerCase();
+        log = LogUtil.Log.inLogDir("ic_" + fmd + ".log");
         log.logln("framework=" + frameworkType);
         log.logln("model=" + modelType);
         log.logln("dataset=" + datasetType);
@@ -100,7 +103,8 @@ public class ImageClassifyActivity extends AppCompatActivity {
     private boolean loadDataset() {
         if (datasetType == DatasetHelper.Type.E_DEMO
                 || datasetType == DatasetHelper.Type.E_IMAGENET_2_2
-                || datasetType == DatasetHelper.Type.E_IMAGENET_10_50) {
+                || datasetType == DatasetHelper.Type.E_IMAGENET_10_50
+                || datasetType == DatasetHelper.Type.E_IMAGENET_1000_50) {
             timeRecord.loadDataset.setStart();
             dataset = datasetType.getDataset(this);
             timeRecord.loadDataset.setEnd();
@@ -183,10 +187,11 @@ public class ImageClassifyActivity extends AppCompatActivity {
                 result.append("\ntop[").append(i + 1).append("]=").append(statistics.topKMaxHitA[i]).append(';');
             }
         }
+        String resultText = result.toString();
         timeRecord.calc();
         String time = "time " + timeRecord;
 
-        mResult.setText(result.toString());
+        mResult.setText(resultText);
         mTimeRecord.setText(time);
         if (status != null) {
             if (0 <= processOri && processOri < dataset.size()) {
@@ -199,6 +204,11 @@ public class ImageClassifyActivity extends AppCompatActivity {
                     addImages(bm);
                 }
             }
+        }
+        if (allDone) {
+            log.logln("all done");
+            log.logln(resultText);
+            log.logln(time);
         }
     }
 

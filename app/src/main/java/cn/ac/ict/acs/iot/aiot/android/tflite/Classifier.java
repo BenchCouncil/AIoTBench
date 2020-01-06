@@ -21,7 +21,6 @@ import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
-import android.util.Log;
 
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
@@ -252,7 +251,7 @@ public abstract class Classifier {
       }
     }
     long endTime = SystemClock.uptimeMillis();
-    Log.v(TAG, "Timecost to put values into ByteBuffer: " + (endTime - startTime));
+//    Log.v(TAG, "Timecost to put values into ByteBuffer: " + (endTime - startTime));
   }
 
   /** Runs inference and returns the classification results. */
@@ -270,7 +269,7 @@ public abstract class Classifier {
     runInference();
     long endTime = SystemClock.uptimeMillis();
     Trace.endSection();
-    Log.v(TAG, "Timecost to run model inference: " + (endTime - startTime));
+//    Log.v(TAG, "Timecost to run model inference: " + (endTime - startTime));
 
     // Find the best classifications.
     PriorityQueue<Recognition> pq =

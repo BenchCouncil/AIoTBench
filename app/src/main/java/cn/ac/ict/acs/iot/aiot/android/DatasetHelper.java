@@ -57,7 +57,9 @@ public class DatasetHelper {
         E_IMAGENET_1000_50("imageNet_1000x50") {
             @Override
             public IDataset getDataset(Context context) {
-                throw new IllegalArgumentException("not implement");
+                return new DatasetHelper.ImageNet.ImageNetLoader(
+                        Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + ImageNet.IMAGE_NET_DATA_DIR_1000_50,
+                        DatasetHelper.ImageNet.IMAGE_NET_CLASS_FILE_PATH);
             }
         },
         E_USER_SELECTED_FILE("其他可选文件") {
@@ -111,6 +113,7 @@ public class DatasetHelper {
     public static class ImageNet {
         public static final String IMAGE_NET_DATA_DIR_2_2 = "aiot/imagenet/ILSVRC2012_img_val_sample/validation";
         public static final String IMAGE_NET_DATA_DIR_10_50 = "aiot/imagenet/ILSVRC2012_img_val_sample_10x50/validation";
+        public static final String IMAGE_NET_DATA_DIR_1000_50 = "aiot/imagenet/ILSVRC2012_img_val/validation";
 
         public static final String IMAGE_NET_CLASS_FILE = "aiot/imagenet/ILSVRC2012_img_val_classes_with_name";
         public static final String IMAGE_NET_CLASS_FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + IMAGE_NET_CLASS_FILE;
@@ -124,6 +127,14 @@ public class DatasetHelper {
             protected final ImageNetClasses classesInfo;
 
             public ImageNetLoader(String rootDir, String classInfoFilePath) {
+                try {
+                    classesInfo = new ImageNetClasses(classInfoFilePath);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException("No class info file: " + classInfoFilePath, e);
+                }
+                this.classes = classesInfo.classes;
+                classesFiles = new String[classes.length][];
                 this.rootDir = rootDir;
                 if (TextUtils.isEmpty(rootDir)) {
                     throw new RuntimeException("No imageNet dir " + rootDir);
@@ -132,37 +143,22 @@ public class DatasetHelper {
                 if (!root.exists() || !root.isDirectory()) {
                     throw new RuntimeException("Wrong imageNet dir " + rootDir);
                 }
-                File[] classesDirs = root.listFiles();
-                ArrayList<String> classesDirList = new ArrayList<>(classesDirs.length);
-                ArrayList<String[]> classesDirFileLists = new ArrayList<>(classesDirs.length);
-                for (File classDir : classesDirs) {
-                    String classDirName = classDir.getName();
+                for (int i=0; i<classes.length; ++i) {
+                    String classDirName = classes[i];
+                    String classPath = rootDir + "/" + classDirName;
+                    File classDir = new File(classPath);
                     if (classDir.exists() && classDir.isDirectory() && !TextUtils.isEmpty(classDirName) && classDirName.startsWith("n")) {
-                        classesDirList.add(classDirName);
                         String[] files = classDir.list();
-                        classesDirFileLists.add(files == null || files.length <= 0 ? new String[0] : files);
+                        classesFiles[i] = files == null || files.length <= 0 ? new String[0] : files;
+                    } else {
+                        classesFiles[i] = new String[0];
                     }
-                }
-                this.classes = new String[classesDirList.size()];
-                for (int i=0; i<this.classes.length; ++i) {
-                    this.classes[i] = classesDirList.get(i);
-                }
-                this.classesFiles = new String[classesDirFileLists.size()][];
-                for (int i=0; i<this.classesFiles.length; ++i) {
-                    this.classesFiles[i] = classesDirFileLists.get(i);
                 }
                 int size = 0;
                 for (String[] files : this.classesFiles) {
                     size += files.length;
                 }
                 this.size = size;
-
-                try {
-                    classesInfo = new ImageNetClasses(classInfoFilePath);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
             }
 
             @Override
@@ -315,6 +311,8 @@ public class DatasetHelper {
     public static class DemoAssetImage implements IDataset {
         public static final String ASSET_FILE_PATH = "img/image-400x400-rgb.jpg";
         public static final int CLASS_IN_IMAGENET = 269;  // gray wolf;
+        public static final String ASSET_FILE_PATH_DOG = "img/dog.jpg";
+        public static final int CLASS_IN_IMAGENET_DOG = 258;  // Samoyed;
 
         protected final String assetFilePathCopied;
         protected final ImageNet.ImageNetClasses classesInfo;

@@ -47,8 +47,8 @@ public class PyTorchModels {
         }
 
         @Override
-        public void destroy() {
-            super.destroy();
+        protected void doDestroy() {
+            super.doDestroy();
             if (module != null) {
                 module.destroy();
             }

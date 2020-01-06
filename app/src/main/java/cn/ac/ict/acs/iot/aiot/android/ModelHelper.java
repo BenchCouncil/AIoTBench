@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,6 +30,9 @@ public class ModelHelper {
 
         E_MOBILE_NET_FLOAT("mobile_net_float"),
         E_MOBILE_NET_QUANTIZED("mobile_net_quantized"),
+
+        E_SQUEEZE_NET("squeeze_net"),
+        E_UNKNOW_NET("unknow_net"),
         ;
 
         @NonNull
@@ -97,9 +101,16 @@ public class ModelHelper {
 
         public final LogUtil.Log log;
 
+        private boolean destroyed;
+        private boolean preDestroyed;
+        private boolean workThreadRunning;
+
         public AbstractModel(LogUtil.Log log) {
             timeRecord = new StatisticsTime.TimeRecord();
             this.log = log;
+            this.destroyed = false;
+            this.preDestroyed = false;
+            this.workThreadRunning = false;
         }
 
         @Override
@@ -108,18 +119,31 @@ public class ModelHelper {
         }
         @WorkerThread
         protected void doImageClassificationContinue() {
+            if (isDestroyed() || isPreDestroyed()) {
+                return;
+            }
+            workThreadRunning = true;
             if (dataset == null || dataset.size() <= 0) {
                 sendMsg(dataset == null ? -1 : dataset.size(), null);
+                workThreadRunning = false;
                 return;
             }
             timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
             Status status = new Status();
             sendMsg(-1, status);
             for (int i=0; i<dataset.size(); i++) {
+                if (isDestroyed() || isPreDestroyed()) {
+                    break;
+                }
                 doImageClassificationContinue(i, status);
                 sendMsg(i, status);
             }
             sendMsg(dataset.size(), status);
+            workThreadRunning = false;
+            if (isPreDestroyed() && !isDestroyed()) {
+                this.destroyed = true;
+                doDestroy();
+            }
         }
 
         @WorkerThread
@@ -137,12 +161,17 @@ public class ModelHelper {
             status.bitmapCroped = BitmapUtil.centerCropResize(status.bitmapOri, getInputImageWidth(), getInputImageHeight());
             log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
 
-            log.loglnA("ic", "index", imageIndex, "bitmap", status.bitmapCroped, "ic", "start", StatisticsTime.TimeRecord.time());
-            StatisticsScore statistics = doImageClassificationContinue(status.bitmapCroped, target);
+            try {
+                log.loglnA("ic", "index", imageIndex, "bitmap", status.bitmapCroped, "ic", "start", StatisticsTime.TimeRecord.time());
+                StatisticsScore statistics = doImageClassificationContinue(status.bitmapCroped, target);
 
-            log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);
-            status.statistics.updateBy(statistics);
-            log.loglnA("ic", "index", imageIndex, "statistics", "end", StatisticsTime.TimeRecord.time());
+                log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);
+                status.statistics.updateBy(statistics);
+                log.loglnA("ic", "index", imageIndex, "statistics", "end", StatisticsTime.TimeRecord.time());
+            } catch (Exception e) {
+                log.loglnA("ic", "index", imageIndex, "do image classification error", "exception", e);
+                Log.e("ic", "do image classification error", e);
+            }
             time.setEnd();
             log.loglnA("ic", "index", imageIndex, "all", "end", time.end);
             log.loglnA("ic", "index", imageIndex, "all", "end", time);
@@ -161,6 +190,30 @@ public class ModelHelper {
         }
 
         public void destroy() {
+            if (isWorkThreadRunning()) {
+                preDestroyed = true;
+            } else {
+                if (isDestroyed()) {
+                    return;
+                }
+                this.destroyed = true;
+                doDestroy();
+            }
+        }
+
+        protected void doDestroy() {
+        }
+
+        public boolean isDestroyed() {
+            return destroyed;
+        }
+
+        public boolean isPreDestroyed() {
+            return preDestroyed;
+        }
+
+        public boolean isWorkThreadRunning() {
+            return workThreadRunning;
         }
     }
 

@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 
 import com.github.labowenzi.commonj.JEnumUtil;
 
+import cn.ac.ict.acs.iot.aiot.android.caffe2.Caffe2Models;
 import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchModels;
 import cn.ac.ict.acs.iot.aiot.android.tflite.TfLiteModels;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
@@ -26,8 +27,10 @@ public class FrameworkHelper {
                 new ModelHelper.Type[]{
                         ModelHelper.Type.E_MOBILE_NET,
                         ModelHelper.Type.E_RES_NET,
+                        ModelHelper.Type.E_SQUEEZE_NET,
+                        ModelHelper.Type.E_UNKNOW_NET,
                 }, null,
-                null),
+                new Caffe2ModelGenerator()),
         E_TENSORFLOW_LITE("tensorflow_lite",
                 new ModelHelper.Type[]{
                         ModelHelper.Type.E_MOBILE_NET_FLOAT,
@@ -62,6 +65,7 @@ public class FrameworkHelper {
                         DatasetHelper.Type.E_DEMO,
                         DatasetHelper.Type.E_IMAGENET_2_2,
                         DatasetHelper.Type.E_IMAGENET_10_50,
+                        DatasetHelper.Type.E_IMAGENET_1000_50,
                 };
             }
             this.availableDatasets = availableDatasets;
@@ -139,6 +143,21 @@ public class FrameworkHelper {
                 return new PyTorchModels.MobileNet_925(activity, log);
             } else if (model == ModelHelper.Type.E_RES_NET){
                 return new PyTorchModels.ResNet18(activity, log);
+            }
+            return null;
+        }
+    }
+    public static class Caffe2ModelGenerator implements IModelGenerator {
+        @Override
+        public ModelHelper.AbstractModel genModel(Activity activity, LogUtil.Log log, ModelHelper.Type model) {
+            if (model == ModelHelper.Type.E_MOBILE_NET) {
+                return new Caffe2Models.MobileNet(activity, log);
+            } else if (model == ModelHelper.Type.E_RES_NET){
+                return new Caffe2Models.ResNet18(activity, log);
+            } else if (model == ModelHelper.Type.E_SQUEEZE_NET){
+                return new Caffe2Models.SqueezeNet(activity, log);
+            } else if (model == ModelHelper.Type.E_UNKNOW_NET){
+                return new Caffe2Models.UnknowNet(activity, log);
             }
             return null;
         }

@@ -84,8 +84,8 @@ public class TfLiteModels {
         }
 
         @Override
-        public void destroy() {
-            super.destroy();
+        protected void doDestroy() {
+            super.doDestroy();
             classifier.close();
         }
     }
