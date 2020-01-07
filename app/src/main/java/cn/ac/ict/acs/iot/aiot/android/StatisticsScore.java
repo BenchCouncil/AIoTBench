@@ -13,10 +13,14 @@ public class StatisticsScore {
     public final boolean[] maxHit;
 
     public int target;
+    public float firstHitRecognitionDepth;
 
     public StatisticsScore(float[] scores) {
         this.scores = new MathUtil.StatisticsFloat(scores);
         this.maxHit = new boolean[this.scores.max.length];
+
+        this.target = -1;
+        this.firstHitRecognitionDepth = -1;
     }
 
     public void calc() {
@@ -41,6 +45,14 @@ public class StatisticsScore {
         for (int j=i; j<maxScoreIndex.length; ++j) {
             maxHit[j] = true;
         }
+        if (maxHit[0]) {
+            // first hit;
+            // 可辨识度
+            double maxDiff = (scores.max[0] - scores.max[1]) / scores.max[0];
+            firstHitRecognitionDepth = (float) maxDiff;
+        } else {
+            firstHitRecognitionDepth = -1;
+        }
     }
 
     @NonNull
@@ -55,6 +67,7 @@ public class StatisticsScore {
         for (int i=0; i<scores.max.length; ++i) {
             s.append(scores.max[i]).append(',');
         }
+        s.append(' ').append("firstHitRecognitionDepth=").append(firstHitRecognitionDepth);
         s.append(' ').append("target=").append(target);
         return s.toString();
     }
