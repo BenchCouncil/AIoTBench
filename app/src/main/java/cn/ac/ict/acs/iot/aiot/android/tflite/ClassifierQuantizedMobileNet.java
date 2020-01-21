@@ -40,6 +40,11 @@ public class ClassifierQuantizedMobileNet extends Classifier {
     super(activity, device, numThreads, log);
     labelProbArray = new byte[1][getNumLabels()];
   }
+  public ClassifierQuantizedMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
+          throws IOException {
+    super(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+    labelProbArray = new byte[1][getNumLabels()];
+  }
 
   @Override
   public int getImageSizeX() {

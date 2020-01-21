@@ -22,12 +22,16 @@ import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
 
+import com.github.labowenzi.commonj.JUtil;
+
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -98,11 +102,19 @@ public abstract class Classifier {
    * @return A classifier with the desired configuration.
    */
   public static Classifier create(Activity activity, Model model, Device device, int numThreads, LogUtil.Log log)
-      throws IOException {
+          throws IOException {
     if (model == Model.QUANTIZED) {
       return new ClassifierQuantizedMobileNet(activity, device, numThreads, log);
     } else {
       return new ClassifierFloatMobileNet(activity, device, numThreads, log);
+    }
+  }
+  public static Classifier create(String net_tflite_filepath, Model model, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
+          throws IOException {
+    if (model == Model.QUANTIZED) {
+      return new ClassifierQuantizedMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+    } else {
+      return new ClassifierFloatMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, log);
     }
   }
 
@@ -184,8 +196,18 @@ public abstract class Classifier {
 
   /** Initializes a {@code Classifier}. */
   protected Classifier(Activity activity, Device device, int numThreads, LogUtil.Log log) throws IOException {
+      this(activity, null, null, device, numThreads, log);
+  }
+  protected Classifier(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log) throws IOException {
+      this(null, net_tflite_filepath, labelsFilePath, device, numThreads, log);
+  }
+  protected Classifier(Activity activity, String net_tflite_filepath, String labelsFilePath, Device device, int numThreads, LogUtil.Log log) throws IOException {
     this.log = log;
-    tfliteModel = loadModelFile(activity);
+    if (JUtil.isEmpty(net_tflite_filepath)) {
+        tfliteModel = loadModelFile(activity);
+    } else {
+        tfliteModel = loadModelFile(net_tflite_filepath);
+    }
     switch (device) {
       case NNAPI:
         tfliteOptions.setUseNNAPI(true);
@@ -199,7 +221,11 @@ public abstract class Classifier {
     }
     tfliteOptions.setNumThreads(numThreads);
     tflite = new Interpreter(tfliteModel, tfliteOptions);
-    labels = loadLabelList(activity);
+    if (JUtil.isEmpty(labelsFilePath)) {
+        labels = loadLabelList(activity);
+    } else {
+        labels = loadLabelList(labelsFilePath);
+    }
     imgData =
         ByteBuffer.allocateDirect(
             DIM_BATCH_SIZE
@@ -213,9 +239,15 @@ public abstract class Classifier {
 
   /** Reads label list from Assets. */
   private List<String> loadLabelList(Activity activity) throws IOException {
+      return loadLabelList(activity.getAssets().open(getLabelPath()));
+  }
+    private List<String> loadLabelList(String labelsFilePath) throws IOException {
+        return loadLabelList(new FileInputStream(new File(labelsFilePath)));
+    }
+  private List<String> loadLabelList(InputStream in) throws IOException {
     List<String> labels = new ArrayList<String>();
     BufferedReader reader =
-        new BufferedReader(new InputStreamReader(activity.getAssets().open(getLabelPath())));
+            new BufferedReader(new InputStreamReader(in));
     String line;
     while ((line = reader.readLine()) != null) {
       labels.add(line);
@@ -231,6 +263,14 @@ public abstract class Classifier {
     FileChannel fileChannel = inputStream.getChannel();
     long startOffset = fileDescriptor.getStartOffset();
     long declaredLength = fileDescriptor.getDeclaredLength();
+    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+  }
+  private MappedByteBuffer loadModelFile(String net_tflite_filepath) throws IOException {
+    File file = new File(net_tflite_filepath);
+    FileInputStream inputStream = new FileInputStream(file);
+    FileChannel fileChannel = inputStream.getChannel();
+    long startOffset = 0;
+    long declaredLength = file.length();
     return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
   }
 

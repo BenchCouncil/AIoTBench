@@ -26,6 +26,38 @@
 
 extern "C"
 jlong
+Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_loadNetByFile(
+        JNIEnv *env,
+        jobject /* this */,
+        jstring filePath) {
+
+    const char *filePathCharP = env->GetStringUTFChars(filePath, nullptr);
+
+    auto *net = new caffe2::NetDef();
+
+    alogd("Attempting to load protobuf netdefs...");
+    std::vector<char> buffer;
+    std::ifstream file(filePathCharP, std::ios::binary | std::ios::ate);
+    if (!file) {
+        return false;
+    }
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    buffer.resize(size);
+    file.read(buffer.data(), size);
+
+    if (!net->ParseFromArray(buffer.data(), buffer.size())) {
+        aloge("Couldn't parse net from data.\n");
+    }
+    file.close();
+
+    env->ReleaseStringUTFChars(filePath, filePathCharP);
+    alogd("load net done.");
+    jlong p = (jlong)(net);
+    return p;
+}
+extern "C"
+jlong
 Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_loadNet(
                 JNIEnv *env,
                 jobject /* this */,

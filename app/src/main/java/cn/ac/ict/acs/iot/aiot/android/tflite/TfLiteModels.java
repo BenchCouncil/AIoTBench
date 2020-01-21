@@ -5,12 +5,16 @@ import android.graphics.Bitmap;
 
 import androidx.annotation.WorkerThread;
 
+import com.github.labowenzi.commonj.JUtil;
+
 import java.io.IOException;
 import java.util.List;
 
-import cn.ac.ict.acs.iot.aiot.android.ModelHelper;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
+import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /**
@@ -18,21 +22,32 @@ import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
  */
 public class TfLiteModels {
 
-    public abstract static class TfLiteModel extends ModelHelper.AbstractModel {
+    public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Tflite desc) {
+        String filePath = desc.getNet_tflite_filepath(dir);
+        String labelsFilePath = desc.getLabels_filepath(dir);
+        Classifier.Model m = getModel(desc);
+        if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) || m == null) {
+            return null;
+        }
+        return new TfLiteModelFromFile(log, m, filePath, labelsFilePath);
+    }
+    public static Classifier.Model getModel(ModelDesc.Tflite desc) {
+        String q = desc.getQuantization();
+        Classifier.Model[] models = Classifier.Model.values();
+        for (Classifier.Model m : models) {
+            if (m.name().toLowerCase().equals(q)) {
+                return m;
+            }
+        }
+        return Classifier.Model.FLOAT;
+    }
+
+    public abstract static class TfLiteModel extends AbstractModel {
 
         protected Classifier classifier;
 
-        public TfLiteModel(Activity activity, Classifier.Model model, LogUtil.Log log) {
+        public TfLiteModel(LogUtil.Log log) {
             super(log);
-            try {
-                timeRecord.loadModel.setStart();
-                classifier = Classifier.create(activity, model, Classifier.Device.CPU, 1, log);
-                timeRecord.loadModel.setEnd();
-                log.logln("load model: " + timeRecord.loadModel);
-            } catch (IOException e) {
-                classifier = null;
-                e.printStackTrace();
-            }
         }
 
         @Override
@@ -89,13 +104,41 @@ public class TfLiteModels {
             classifier.close();
         }
     }
+    public static class TfLiteModelFromFile extends TfLiteModel {
+        public TfLiteModelFromFile(LogUtil.Log log, Classifier.Model model, String net_tflite_filepath, String labelsFilePath) {
+            super(log);
+            try {
+                timeRecord.loadModel.setStart();
+                classifier = Classifier.create(net_tflite_filepath, model, Classifier.Device.CPU, 1, labelsFilePath, log);
+                timeRecord.loadModel.setEnd();
+                log.logln("load model: " + timeRecord.loadModel);
+            } catch (IOException e) {
+                classifier = null;
+                e.printStackTrace();
+            }
+        }
+    }
+    public abstract static class DefaultNet extends TfLiteModel {
+        public DefaultNet(Activity activity, Classifier.Model model, LogUtil.Log log) {
+            super(log);
+            try {
+                timeRecord.loadModel.setStart();
+                classifier = Classifier.create(activity, model, Classifier.Device.CPU, 1, log);
+                timeRecord.loadModel.setEnd();
+                log.logln("load model: " + timeRecord.loadModel);
+            } catch (IOException e) {
+                classifier = null;
+                e.printStackTrace();
+            }
+        }
+    }
 
-    public static class MobileNetFloat extends TfLiteModel {
+    public static class MobileNetFloat extends DefaultNet {
         public MobileNetFloat(Activity activity, LogUtil.Log log) {
             super(activity, Classifier.Model.FLOAT, log);
         }
     }
-    public static class MobileNetQuantized extends TfLiteModel {
+    public static class MobileNetQuantized extends DefaultNet {
         public MobileNetQuantized(Activity activity, LogUtil.Log log) {
             super(activity, Classifier.Model.QUANTIZED, log);
         }

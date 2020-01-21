@@ -14,12 +14,14 @@ public class PredictorWrapper {
     private static final String TAG = "predictor";
     private static final long NULL = 0;
 
-    protected final String initNetFileName;
-    protected final String predictNetFileName;
     protected long pInitNet;
     protected long pPredictNet;
     protected long pPredictor;
 
+    // todo: load net from file instead of asset;
+    // test in other project;
+    // https://github.com/facebookarchive/caffe2/issues/567#issuecomment-301969664
+    protected native long loadNetByFile(String filePath);
     protected native long loadNet(AssetManager mgr, String fileName);
     protected native long initCaffe2(long pInitNet, long pPredictNet);
 
@@ -27,9 +29,12 @@ public class PredictorWrapper {
 
     protected native void deletePtr(long ptr);
 
+    public PredictorWrapper(String initNetFilePath, String predictNetFilePath) {
+        this.pInitNet = loadNetByFile(initNetFilePath);
+        this.pPredictNet = loadNetByFile(predictNetFilePath);
+        this.pPredictor = initCaffe2(pInitNet, pPredictNet);
+    }
     public PredictorWrapper(AssetManager assetManager, String initNetFileName, String predictNetFileName) {
-        this.initNetFileName = initNetFileName;
-        this.predictNetFileName = predictNetFileName;
         this.pInitNet = loadNet(assetManager, initNetFileName);
         this.pPredictNet = loadNet(assetManager, predictNetFileName);
         this.pPredictor = initCaffe2(pInitNet, pPredictNet);

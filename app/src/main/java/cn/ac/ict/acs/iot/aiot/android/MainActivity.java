@@ -13,6 +13,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.github.labowenzi.commonj.JUtil;
+import com.github.labowenzi.commonj.log.Log;
+
+import cn.ac.ict.acs.iot.aiot.android.dataset.Dataset;
+import cn.ac.ict.acs.iot.aiot.android.log.ALog;
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.util.DialogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -25,32 +31,61 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
     };
 
+    private TextView mDirModel;
+    private TextView mDirDataset;
     private TextView mFramework;
     private TextView mModel;
     private TextView mDataset;
 
-    private FrameworkHelper.Type frameworkType;
-    private ModelHelper.Type modelType;
-    private DatasetHelper.Type datasetType;
+    private Model modelI;
+    private Dataset datasetI;
+
+    private String dirModel;
+    private String dirDataset;
+    private String frameworkName;
+    private String modelName;
+    private String datasetName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.setInstance(new ALog());
+        modelI = Model.getInstance();
+        datasetI = Dataset.getInstance(this);
         setContentView(R.layout.activity_main);
+        mDirModel = findViewById(R.id.tv_dir_model);
+        mDirDataset = findViewById(R.id.tv_dir_dataset);
         mFramework = findViewById(R.id.tv_framework);
         mModel = findViewById(R.id.tv_model);
         mDataset = findViewById(R.id.tv_dataset);
+        findViewById(R.id.btn_dir_model).setOnClickListener(view -> onSelectDirModel());
+        findViewById(R.id.btn_dir_dataset).setOnClickListener(view -> onSelectDirDataset());
         findViewById(R.id.btn_framework).setOnClickListener(view -> onSelectFramework());
         findViewById(R.id.btn_model).setOnClickListener(view -> onSelectModel());
         findViewById(R.id.btn_dataset).setOnClickListener(view -> onSelectDataset());
         findViewById(R.id.btn_go).setOnClickListener(view -> onGo());
-        frameworkType = FrameworkHelper.Type.E_PY_TORCH;
-        modelType = ModelHelper.Type.E_MOBILE_NET;
-        datasetType = DatasetHelper.Type.E_DEMO;
+        dirModel = null;
+        dirDataset = null;
+        frameworkName = null;
+        modelName = null;
+        datasetName = null;
+        initDir();
+        refreshDirModelViews();
+        refreshDirDatasetViews();
         refreshFrameworkViews();
         refreshModelViews();
         refreshDatasetViews();
         askPermission();
+    }
+
+    private void initDir() {
+        dirModel = modelI.getDirs()[0];
+        modelI.setModelDir(dirModel);
+        dirDataset = datasetI.getDirs()[0];
+        datasetI.setDatasetDir(dirDataset);
+        frameworkName = Model.FRAMEWORK_DEFAULT;
+        modelName = modelI.getDefaultModelName(frameworkName);
+        datasetName = datasetI.getDefaultDatasetName();
     }
 
     private void askPermission() {
@@ -92,9 +127,41 @@ public class MainActivity extends AppCompatActivity {
         DialogInterface.OnClickListener negL = (dialog, which) -> dialog.dismiss();
         DialogUtil.dlgList(this, title, null, items, itemsL, null, null, negStr, negL).show();
     }
+    private void onSelectDirModel() {
+        String title = "model dirs";
+        String[] items = modelI.getDirs();
+        DialogInterface.OnClickListener itemsL = (dialog, which) -> {
+            onSelectDirModel(which);
+            dialog.dismiss();
+        };
+        onSelect(title, items, itemsL);
+    }
+    private void onSelectDirModel(int index) {
+        dirModel = modelI.getDirs()[index];
+        modelI.setModelDir(dirModel);
+        modelName = modelI.getDefaultModelName(frameworkName);
+        refreshDirModelViews();;
+        refreshModelViews();
+    }
+    private void onSelectDirDataset() {
+        String title = "dataset dirs";
+        String[] items = datasetI.getDirs();
+        DialogInterface.OnClickListener itemsL = (dialog, which) -> {
+            onSelectDirDataset(which);
+            dialog.dismiss();
+        };
+        onSelect(title, items, itemsL);
+    }
+    private void onSelectDirDataset(int index) {
+        dirDataset = datasetI.getDirs()[index];
+        datasetI.setDatasetDir(dirDataset);
+        datasetName = datasetI.getDefaultDatasetName();
+        refreshDirDatasetViews();;
+        refreshDatasetViews();
+    }
     private void onSelectFramework() {
         String title = "frameworks";
-        String[] items = FrameworkHelper.Type.availableFrameworkStrings;
+        String[] items = Model.FRAMEWORKS;
         DialogInterface.OnClickListener itemsL = (dialog, which) -> {
             onSelectFramework(which);
             dialog.dismiss();
@@ -102,20 +169,18 @@ public class MainActivity extends AppCompatActivity {
         onSelect(title, items, itemsL);
     }
     private void onSelectFramework(int index) {
-        frameworkType = FrameworkHelper.Type.availableFrameworks[index];
-        modelType = frameworkType.getAvailableModels()[0];
-        datasetType = frameworkType.getAvailableDatasets()[0];
+        frameworkName = Model.FRAMEWORKS[index];
+        modelName = modelI.getDefaultModelName(frameworkName);
         refreshFrameworkViews();
         refreshModelViews();
-        refreshDatasetViews();
     }
     private void onSelectModel() {
-        if (frameworkType == null) {
+        if (JUtil.isEmpty(frameworkName) || modelI.getModelDir() == null) {
             Util.showToast("no framework", this);
             return;
         }
         String title = "models";
-        String[] items = frameworkType.getAvailableModelStrings();
+        String[] items = modelI.getModelDir().getInfo(frameworkName).names;
         DialogInterface.OnClickListener itemsL = (dialog, which) -> {
             onSelectModel(which);
             dialog.dismiss();
@@ -123,21 +188,19 @@ public class MainActivity extends AppCompatActivity {
         onSelect(title, items, itemsL);
     }
     private void onSelectModel(int index) {
-        ModelHelper.Type t = frameworkType.getAvailableModels()[index];
-        if (t == null) {
+        modelName = modelI.getModelDir().getInfo(frameworkName).names[index];
+        if (JUtil.isEmpty(modelName)) {
             Util.showToast("wrong model", this);
-        } else {
-            modelType = t;
-            refreshModelViews();
         }
+        refreshModelViews();
     }
     private void onSelectDataset() {
-        if (frameworkType == null) {
+        if (datasetI.getDatasetDir() == null) {
             Util.showToast("no framework", this);
             return;
         }
         String title = "datasets";
-        String[] items = frameworkType.getAvailableDatasetStrings();
+        String[] items = datasetI.getDatasetDir().getNames();
         DialogInterface.OnClickListener itemsL = (dialog, which) -> {
             onSelectDataset(which);
             dialog.dismiss();
@@ -145,40 +208,39 @@ public class MainActivity extends AppCompatActivity {
         onSelect(title, items, itemsL);
     }
     private void onSelectDataset(int index) {
-        DatasetHelper.Type t = frameworkType.getAvailableDatasets()[index];
-        if (t == null) {
+        datasetName = datasetI.getDatasetDir().getNames()[index];
+        if (JUtil.isEmpty(datasetName)) {
             Util.showToast("wrong dataset", this);
-        } else if (t == DatasetHelper.Type.E_USER_SELECTED_FILE) {
-            // to select file from file system;
-            Util.showToast(R.string.not_implemented, this);
-        } else {
-            datasetType = t;
-            refreshDatasetViews();
         }
+        refreshDatasetViews();
     }
 
+    private void refreshDirModelViews() {
+        refreshTextViews(mDirModel, dirModel);
+    }
+    private void refreshDirDatasetViews() {
+        refreshTextViews(mDirDataset, dirDataset);
+    }
     private void refreshFrameworkViews() {
-        refreshTextViews(mFramework, frameworkType.getValue());
+        refreshTextViews(mFramework, frameworkName);
     }
     private void refreshModelViews() {
-        refreshTextViews(mModel, modelType.getValue());
+        refreshTextViews(mModel, modelName);
     }
     private void refreshDatasetViews() {
-        refreshTextViews(mDataset, datasetType.getValue());
+        refreshTextViews(mDataset, datasetName);
     }
     private void refreshTextViews(TextView view, String text) {
         view.setText(text);
     }
 
     private void onGo() {
-        if (frameworkType == FrameworkHelper.Type.E_PY_TORCH
-                || frameworkType == FrameworkHelper.Type.E_CAFFE_2
-                || frameworkType == FrameworkHelper.Type.E_TENSORFLOW_LITE) {
+        if (!JUtil.isEmpty(frameworkName)) {
             Intent intent = new Intent(MainActivity.this, ImageClassifyActivity.class);
             Bundle bundle = new Bundle();
-            bundle.putString(ImageClassifyActivity.EXTRA_FRAMEWORK_NAME, frameworkType.getValue());
-            bundle.putString(ImageClassifyActivity.EXTRA_MODEL_NAME, modelType.getValue());
-            bundle.putString(ImageClassifyActivity.EXTRA_DATASET_NAME, datasetType.getValue());
+            bundle.putString(ImageClassifyActivity.EXTRA_FRAMEWORK_NAME, frameworkName);
+            bundle.putString(ImageClassifyActivity.EXTRA_MODEL_NAME, modelName);
+            bundle.putString(ImageClassifyActivity.EXTRA_DATASET_NAME, datasetName);
             intent.putExtras(bundle);
             startActivity(intent);
         } else {

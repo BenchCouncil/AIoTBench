@@ -44,6 +44,11 @@ public class ClassifierFloatMobileNet extends Classifier {
     super(activity, device, numThreads, log);
     labelProbArray = new float[1][getNumLabels()];
   }
+  public ClassifierFloatMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
+          throws IOException {
+    super(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+    labelProbArray = new float[1][getNumLabels()];
+  }
 
   @Override
   public int getImageSizeX() {

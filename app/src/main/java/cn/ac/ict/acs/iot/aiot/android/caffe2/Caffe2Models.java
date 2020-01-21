@@ -6,9 +6,11 @@ import android.graphics.Bitmap;
 
 import androidx.annotation.WorkerThread;
 
-import cn.ac.ict.acs.iot.aiot.android.ModelHelper;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
+import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /**
@@ -16,17 +18,18 @@ import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
  */
 public class Caffe2Models {
 
-    public abstract static class Caffe2Model extends ModelHelper.AbstractModel {
+    public static Caffe2Model newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Caffe2 desc) {
+        String init = desc.getInit_net_pb_filepath(dir);
+        String predict = desc.getPredict_net_pb_filepath(dir);
+        return new Caffe2ModelFromFile(log, init, predict);
+    }
+
+    public abstract static class Caffe2Model extends AbstractModel {
 
         protected PredictorWrapper predictor;
 
-        public Caffe2Model(Activity activity, LogUtil.Log log, String initNetFileName, String predictNetFileName) {
+        public Caffe2Model(LogUtil.Log log) {
             super(log);
-            timeRecord.loadModel.setStart();
-            AssetManager assetManager = activity.getAssets();
-            predictor = new PredictorWrapper(assetManager, initNetFileName, predictNetFileName);
-            timeRecord.loadModel.setEnd();
-            log.logln("load model: " + timeRecord.loadModel);
         }
 
         @Override
@@ -43,6 +46,16 @@ public class Caffe2Models {
         }
 
         @Override
+        public int getInputImageWidth() {
+            return 227;
+        }
+
+        @Override
+        public int getInputImageHeight() {
+            return 227;
+        }
+
+        @Override
         @WorkerThread
         protected StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target) {
             float[] scores = predictor.doImageClassification(bitmap);
@@ -55,19 +68,23 @@ public class Caffe2Models {
             return statistics;
         }
     }
+    public static class Caffe2ModelFromFile extends Caffe2Model {
+        public Caffe2ModelFromFile(LogUtil.Log log, String initNetFilePath, String predictNetFilePath) {
+            super(log);
+            timeRecord.loadModel.setStart();
+            predictor = new PredictorWrapper(initNetFilePath, predictNetFilePath);
+            timeRecord.loadModel.setEnd();
+            log.logln("load model: " + timeRecord.loadModel);
+        }
+    }
     public abstract static class DefaultNet extends Caffe2Model {
         public DefaultNet(Activity activity, LogUtil.Log log, String initNetFileName, String predictNetFileName) {
-            super(activity, log, initNetFileName, predictNetFileName);
-        }
-
-        @Override
-        public int getInputImageWidth() {
-            return 227;
-        }
-
-        @Override
-        public int getInputImageHeight() {
-            return 227;
+            super(log);
+            timeRecord.loadModel.setStart();
+            AssetManager assetManager = activity.getAssets();
+            predictor = new PredictorWrapper(assetManager, initNetFileName, predictNetFileName);
+            timeRecord.loadModel.setEnd();
+            log.logln("load model: " + timeRecord.loadModel);
         }
     }
 

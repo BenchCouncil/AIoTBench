@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -14,9 +13,14 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.labowenzi.commonj.JUtil;
+import com.github.labowenzi.commonj.log.Log;
 
 import java.lang.ref.WeakReference;
 
+import cn.ac.ict.acs.iot.aiot.android.dataset.Dataset;
+import cn.ac.ict.acs.iot.aiot.android.dataset.IDataset;
+import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -30,14 +34,17 @@ public class ImageClassifyActivity extends AppCompatActivity {
     public static final String EXTRA_MODEL_NAME = "extra_model_name";
     public static final String EXTRA_DATASET_NAME = "extra_dataset_name";
 
-    private FrameworkHelper.Type frameworkType;
-    private ModelHelper.Type modelType;
-    private DatasetHelper.Type datasetType;
+    private Model modelI;
+    private Dataset datasetI;
 
-    private ModelHelper.AbstractModel model = null;
+    private String frameworkName;
+    private String modelName;
+    private String datasetName;
+
+    private AbstractModel model = null;
     private StatisticsTime.TimeRecord timeRecord = null;
 
-    private DatasetHelper.IDataset dataset = null;
+    private IDataset dataset = null;
 
     private LogUtil.Log log = null;
 
@@ -52,22 +59,26 @@ public class ImageClassifyActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mHandler = new MHandler(this);
+        modelI = Model.getInstance();
+        datasetI = Dataset.getInstance(this);
         Intent intent = getIntent();
-        frameworkType = FrameworkHelper.Type.get(intent.getStringExtra(EXTRA_FRAMEWORK_NAME));
-        modelType = ModelHelper.Type.get(intent.getStringExtra(EXTRA_MODEL_NAME));
-        datasetType = DatasetHelper.Type.get(intent.getStringExtra(EXTRA_DATASET_NAME));
-        if (frameworkType == null || modelType == null || datasetType == null) {
+        frameworkName = intent.getStringExtra(EXTRA_FRAMEWORK_NAME);
+        modelName = intent.getStringExtra(EXTRA_MODEL_NAME);
+        datasetName = intent.getStringExtra(EXTRA_DATASET_NAME);
+        if (JUtil.isEmpty(frameworkName)
+                || JUtil.isEmpty(modelName)
+                || JUtil.isEmpty(datasetName)) {
             Util.showToast("wrong model or dataset", this);
             finish();
             return;
         }
-        String fmd = frameworkType.name().toLowerCase()
-                + '_' + modelType.name().toLowerCase()
-                + '_' + datasetType.name().toLowerCase();
+        String fmd = frameworkName
+                + '_' + modelName
+                + '_' + datasetName;
         log = LogUtil.Log.inLogDir("ic_" + fmd + ".log");
-        log.logln("framework=" + frameworkType);
-        log.logln("model=" + modelType);
-        log.logln("dataset=" + datasetType);
+        log.logln("framework=" + frameworkName);
+        log.logln("model=" + modelName);
+        log.logln("dataset=" + datasetName);
         if (!loadModel()) {
             finish();
             return;
@@ -82,15 +93,15 @@ public class ImageClassifyActivity extends AppCompatActivity {
     }
 
     private boolean loadModel() {
-        if (frameworkType == null) {
+        if (JUtil.isEmpty(frameworkName)) {
             Util.showToast("no framework", this);
             return false;
         }
-        if (!JUtil.inArray(modelType, frameworkType.getAvailableModels())) {
+        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).names)) {
             Util.showToast(R.string.not_implemented, this);
             return false;
         }
-        model = frameworkType.getModelGenerator().genModel(this, log, modelType);
+        model = modelI.getModel(this, log, frameworkName, modelName);
         if (model == null || !model.isStatusOk()) {
             Util.showToast("load model err", this);
             return false;
@@ -101,12 +112,9 @@ public class ImageClassifyActivity extends AppCompatActivity {
     }
 
     private boolean loadDataset() {
-        if (datasetType == DatasetHelper.Type.E_DEMO
-                || datasetType == DatasetHelper.Type.E_IMAGENET_2_2
-                || datasetType == DatasetHelper.Type.E_IMAGENET_10_50
-                || datasetType == DatasetHelper.Type.E_IMAGENET_1000_50) {
+        if (JUtil.inArray(datasetName, datasetI.getDatasetDir().getNames())) {
             timeRecord.loadDataset.setStart();
-            dataset = datasetType.getDataset(this);
+            dataset = datasetI.getDataset(datasetName);
             timeRecord.loadDataset.setEnd();
             log.logln("load dataset: " + timeRecord.loadDataset);
             if (!dataset.isStatusOk()) {
@@ -141,7 +149,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
     private void doImageClassification() {
         if (model != null) {
             model.handler = mHandler;
-            model.what = ModelHelper.HANDLER_DO_IMAGE_CLASSIFICATION;
+            model.what = AbstractModel.HANDLER_DO_IMAGE_CLASSIFICATION;
             if (dataset != null) {
                 model.dataset = dataset;
             } else {
@@ -154,15 +162,15 @@ public class ImageClassifyActivity extends AppCompatActivity {
         }
     }
     private void onImageClassified(int process, Object obj) {
-        ModelHelper.Status status = null;
-        if (obj!= null && !(obj instanceof ModelHelper.Status)) {
+        AbstractModel.Status status = null;
+        if (obj!= null && !(obj instanceof AbstractModel.Status)) {
             Log.e("image classified data", "null or wrong type");
         } else {
-            status = (ModelHelper.Status) obj;
+            status = (AbstractModel.Status) obj;
         }
         onImageClassified(process, status);
     }
-    private void onImageClassified(int process, ModelHelper.Status status) {
+    private void onImageClassified(int process, AbstractModel.Status status) {
         int processOri = process;
         boolean allDone = false;
         int total = dataset.size();
@@ -243,7 +251,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
             super.handleMessage(msg);
             int what = msg.what;
             switch (what) {
-                case ModelHelper.HANDLER_DO_IMAGE_CLASSIFICATION: {
+                case AbstractModel.HANDLER_DO_IMAGE_CLASSIFICATION: {
                     onImageClassified(msg);
                     break;
                 }

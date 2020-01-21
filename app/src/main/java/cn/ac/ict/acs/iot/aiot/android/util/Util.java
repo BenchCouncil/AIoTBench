@@ -1,8 +1,10 @@
 package cn.ac.ict.acs.iot.aiot.android.util;
 
 import android.content.Context;
-import android.util.Log;
 import android.widget.Toast;
+
+import com.github.labowenzi.commonj.JIoUtil;
+import com.github.labowenzi.commonj.log.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -84,7 +86,9 @@ public class Util {
                     os.write(buffer, 0, read);
                 }
                 os.flush();
+                JIoUtil.closeSilently(os);
             }
+            JIoUtil.closeSilently(is);
             return file.getAbsolutePath();
         }
     }

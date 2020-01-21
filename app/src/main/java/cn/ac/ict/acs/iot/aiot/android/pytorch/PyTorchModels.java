@@ -2,9 +2,10 @@ package cn.ac.ict.acs.iot.aiot.android.pytorch;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.util.Log;
 
 import androidx.annotation.WorkerThread;
+
+import com.github.labowenzi.commonj.log.Log;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
@@ -13,9 +14,11 @@ import org.pytorch.torchvision.TensorImageUtils;
 
 import java.io.IOException;
 
-import cn.ac.ict.acs.iot.aiot.android.ModelHelper;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
+import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -24,7 +27,15 @@ import cn.ac.ict.acs.iot.aiot.android.util.Util;
  */
 public class PyTorchModels {
 
-    public abstract static class PyTorchModel extends ModelHelper.AbstractModel {
+    public static PyTorchModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Pytorch desc) {
+        String filePath = desc.getNet_pt_filepath(dir);
+        return new PyTorchModelFromFile(log, filePath);
+    }
+
+    public abstract static class PyTorchModel extends AbstractModel {
+
+        public static final int INPUT_TENSOR_WIDTH = 224;
+        public static final int INPUT_TENSOR_HEIGHT = 224;
 
         protected Module module;
 
@@ -55,6 +66,15 @@ public class PyTorchModels {
         }
 
         @Override
+        public int getInputImageWidth() {
+            return INPUT_TENSOR_WIDTH;
+        }
+        @Override
+        public int getInputImageHeight() {
+            return INPUT_TENSOR_HEIGHT;
+        }
+
+        @Override
         @WorkerThread
         protected StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(bitmap,
@@ -72,11 +92,18 @@ public class PyTorchModels {
         }
     }
 
+    public static class PyTorchModelFromFile extends PyTorchModel {
+        public PyTorchModelFromFile(LogUtil.Log log, String filePath) {
+            super(log);
+            timeRecord.loadModel.setStart();
+            module = Module.load(filePath);
+            timeRecord.loadModel.setEnd();
+            log.logln("load model: " + timeRecord.loadModel);
+        }
+    }
+
     public static class MobileNet_925 extends PyTorchModel {
         public static final String assetFile = "pytorch/mobilenet_quantized_scripted_925.pt";
-
-        public static final int INPUT_TENSOR_WIDTH = 224;
-        public static final int INPUT_TENSOR_HEIGHT = 224;
 
         public MobileNet_925(Context context, LogUtil.Log log) {
             super(log);
@@ -84,15 +111,6 @@ public class PyTorchModels {
             module = loadFromAssetFile(context, assetFile);
             timeRecord.loadModel.setEnd();
             log.logln("load model: " + timeRecord.loadModel);
-        }
-
-        @Override
-        public int getInputImageWidth() {
-            return INPUT_TENSOR_WIDTH;
-        }
-        @Override
-        public int getInputImageHeight() {
-            return INPUT_TENSOR_HEIGHT;
         }
     }
 
@@ -105,15 +123,6 @@ public class PyTorchModels {
             module = loadFromAssetFile(context, assetFile);
             timeRecord.loadModel.setEnd();
             log.logln("load model: " + timeRecord.loadModel);
-        }
-
-        @Override
-        public int getInputImageWidth() {
-            return 224;
-        }
-        @Override
-        public int getInputImageHeight() {
-            return 224;
         }
     }
 

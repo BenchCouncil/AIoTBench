@@ -44,6 +44,63 @@ in dir: app/src/main/jniLibs/armeabi-v7a/, see app/.gitignore;
 code from: [**Tensorflow lite android**](https://github.com/tensorflow/examples/blob/master/lite/examples/image_classification/android/README.md)  
 
 
+## aiot dir
+
+    aiot
+      models
+        20200109-1
+          models.json desc
+        20200109-2
+          models.json desc
+        20200110-1
+          models.json desc
+      datasets
+        20200109-1
+          datasets.json desc
+
+### models.json
+
+    {
+      "caffe2": [
+        {
+          "name": "inception_v3",
+          "dir": "inception_v3",
+          "init_net_pb": "inception_v3_init.pb",
+          "predict_net_pb": "inception_v3_predict.pb"
+        }
+      ],
+      "pytorch": [
+        {
+          "name": "inception_v3",
+          "dir": "inception_v3",
+          "net_pt": "inception_v3.pt"
+        }
+      ],
+      "tflite": [
+        {
+          "name": "inception_v3",
+          "dir": "inception_v3",
+          "net_tflite": "inception_v3.tflite",
+          "quantization": "float",
+          "labels": "labels.txt"
+        }
+      ]
+    }
+
+### datasets.json
+
+    {
+      "imagenet": {
+        "classes_info": "ILSVRC2012_img_val_classes_with_name",
+        "datasets": [
+          {
+            "name": "imagenet_2x2",
+            "dir": "ILSVRC2012_img_val_sample/validation"
+          }
+        ]
+      }
+    }
+
 ## data set
 
 ### ImageNet

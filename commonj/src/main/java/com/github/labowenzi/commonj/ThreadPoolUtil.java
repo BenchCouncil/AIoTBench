@@ -1,8 +1,7 @@
-package cn.ac.ict.acs.iot.aiot.android.util;
+package com.github.labowenzi.commonj;
 
-import android.util.Log;
-
-import androidx.annotation.NonNull;
+import com.github.labowenzi.commonj.annotation.NotNull;
+import com.github.labowenzi.commonj.log.Log;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -28,7 +27,7 @@ public final class ThreadPoolUtil {
     public static final int MAX_POOL_SIZE = 16;
     public static final long KEEP_ALIVE_TIME = 60L;
 
-    @NonNull
+    @NotNull
     public static ExecutorService getExecutor() {
         if (executor == null) {
             synchronized (executorLock) {
