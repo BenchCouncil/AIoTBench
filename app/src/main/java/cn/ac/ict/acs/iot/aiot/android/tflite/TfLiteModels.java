@@ -81,6 +81,8 @@ public class TfLiteModels {
 
         private float[] getDataAsFloatArray(List<Classifier.Recognition> results) {
             float[] ret = new float[dataset.getClassesInfo().getSize()];
+            int resultsLen = results.size();
+            boolean resultHasDummy = resultsLen != ret.length;
             for (int i=0; i<ret.length; ++i) {
                 ret[i] = 0;
             }
@@ -89,7 +91,7 @@ public class TfLiteModels {
                     continue;
                 }
                 int idInt = result.getIdInt();
-                idInt -= 1;  // tensorflow 的输出的第 0 个是 background，所以其 id 比普通 imageNet 的 id 多 1；
+                if (resultHasDummy) idInt -= 1;  // tensorflow 的输出的第 0 个是 background，所以其 id 比普通 imageNet 的 id 多 1；
                 if (idInt < 0 || idInt >=ret.length) {
                     continue;
                 }

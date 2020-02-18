@@ -70,6 +70,7 @@ dependencies {
     // Use local TensorFlow library
     //implementation 'org.tensorflow:tensorflow-lite-local:0.0.0'
     implementation 'org.tensorflow:tensorflow-lite:1.13.1'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'

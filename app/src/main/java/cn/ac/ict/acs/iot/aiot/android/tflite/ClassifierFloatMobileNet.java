@@ -19,45 +19,37 @@ import android.app.Activity;
 
 import java.io.IOException;
 
+import org.tensorflow.lite.support.common.TensorOperator;
+import org.tensorflow.lite.support.common.ops.NormalizeOp;
+
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /** This TensorFlowLite classifier works with the float MobileNet model. */
 public class ClassifierFloatMobileNet extends Classifier {
 
-  /** MobileNet requires additional normalization of the used input. */
+  /** Float MobileNet requires additional normalization of the used input. */
   private static final float IMAGE_MEAN = 127.5f;
+
   private static final float IMAGE_STD = 127.5f;
 
   /**
-   * An array to hold inference results, to be feed into Tensorflow Lite as outputs. This isn't part
-   * of the super class, because we need a primitive array here.
+   * Float model does not need dequantization in the post-processing. Setting mean and std as 0.0f
+   * and 1.0f, repectively, to bypass the normalization.
    */
-  private float[][] labelProbArray = null;
+  private static final float PROBABILITY_MEAN = 0.0f;
+
+  private static final float PROBABILITY_STD = 1.0f;
 
   /**
    * Initializes a {@code ClassifierFloatMobileNet}.
-   *
-   * @param activity
    */
   public ClassifierFloatMobileNet(Activity activity, Device device, int numThreads, LogUtil.Log log)
       throws IOException {
     super(activity, device, numThreads, log);
-    labelProbArray = new float[1][getNumLabels()];
   }
   public ClassifierFloatMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
-          throws IOException {
+      throws IOException {
     super(net_tflite_filepath, device, numThreads, labelsFilePath, log);
-    labelProbArray = new float[1][getNumLabels()];
-  }
-
-  @Override
-  public int getImageSizeX() {
-    return 224;
-  }
-
-  @Override
-  public int getImageSizeY() {
-    return 224;
   }
 
   @Override
@@ -74,34 +66,12 @@ public class ClassifierFloatMobileNet extends Classifier {
   }
 
   @Override
-  protected int getNumBytesPerChannel() {
-    return 4; // Float.SIZE / Byte.SIZE;
+  protected TensorOperator getPreprocessNormalizeOp() {
+    return new NormalizeOp(IMAGE_MEAN, IMAGE_STD);
   }
 
   @Override
-  protected void addPixelValue(int pixelValue) {
-    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-    imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-    imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-  }
-
-  @Override
-  protected float getProbability(int labelIndex) {
-    return labelProbArray[0][labelIndex];
-  }
-
-  @Override
-  protected void setProbability(int labelIndex, Number value) {
-    labelProbArray[0][labelIndex] = value.floatValue();
-  }
-
-  @Override
-  protected float getNormalizedProbability(int labelIndex) {
-    return labelProbArray[0][labelIndex];
-  }
-
-  @Override
-  protected void runInference() {
-    tflite.run(imgData, labelProbArray);
+  protected TensorOperator getPostprocessNormalizeOp() {
+    return new NormalizeOp(PROBABILITY_MEAN, PROBABILITY_STD);
   }
 }
