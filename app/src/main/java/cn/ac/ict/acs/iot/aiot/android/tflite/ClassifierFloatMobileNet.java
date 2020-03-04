@@ -43,13 +43,13 @@ public class ClassifierFloatMobileNet extends Classifier {
   /**
    * Initializes a {@code ClassifierFloatMobileNet}.
    */
-  public ClassifierFloatMobileNet(Activity activity, Device device, int numThreads, LogUtil.Log log)
+  public ClassifierFloatMobileNet(Activity activity, Device device, int numThreads, boolean needToBgr, LogUtil.Log log)
       throws IOException {
-    super(activity, device, numThreads, log);
+    super(activity, device, numThreads, needToBgr, log);
   }
-  public ClassifierFloatMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
+  public ClassifierFloatMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log)
       throws IOException {
-    super(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+    super(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
   }
 
   @Override

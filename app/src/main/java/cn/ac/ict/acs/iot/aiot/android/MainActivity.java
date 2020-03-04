@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.github.labowenzi.commonj.JIoUtil;
 import com.github.labowenzi.commonj.JUtil;
 import com.github.labowenzi.commonj.log.Log;
 
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mkdirs();
         Log.setInstance(new ALog());
         modelI = Model.getInstance();
         datasetI = Dataset.getInstance(this);
@@ -69,23 +72,35 @@ public class MainActivity extends AppCompatActivity {
         frameworkName = null;
         modelName = null;
         datasetName = null;
+        askPermission();
+        initDirAndViews();
+    }
+
+    private void mkdirs() {
+        String appDataDir = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + "aiot";
+        JIoUtil.mkdir(appDataDir);
+    }
+
+    private void initDir() {
+        if (!JUtil.isEmpty(modelI.getDirs())) {
+            dirModel = modelI.getDirs()[0];
+            modelI.setModelDir(dirModel);
+        }
+        if (!JUtil.isEmpty(datasetI.getDirs())) {
+            dirDataset = datasetI.getDirs()[0];
+            datasetI.setDatasetDir(dirDataset);
+        }
+        frameworkName = Model.FRAMEWORK_DEFAULT;
+        modelName = modelI.getDefaultModelName(frameworkName);
+        datasetName = datasetI.getDefaultDatasetName();
+    }
+    private void initDirAndViews() {
         initDir();
         refreshDirModelViews();
         refreshDirDatasetViews();
         refreshFrameworkViews();
         refreshModelViews();
         refreshDatasetViews();
-        askPermission();
-    }
-
-    private void initDir() {
-        dirModel = modelI.getDirs()[0];
-        modelI.setModelDir(dirModel);
-        dirDataset = datasetI.getDirs()[0];
-        datasetI.setDatasetDir(dirDataset);
-        frameworkName = Model.FRAMEWORK_DEFAULT;
-        modelName = modelI.getDefaultModelName(frameworkName);
-        datasetName = datasetI.getDefaultDatasetName();
     }
 
     private void askPermission() {
@@ -116,6 +131,11 @@ public class MainActivity extends AppCompatActivity {
                 if (!allGrant) {
                     Toast.makeText(this, "need permissions!", Toast.LENGTH_LONG).show();
                     finish();
+                } else {
+                    // reset models;
+                    modelI = Model.resetInstance();
+                    datasetI = Dataset.resetInstance(this);
+                    initDirAndViews();
                 }
                 break;
             }
@@ -140,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         dirModel = modelI.getDirs()[index];
         modelI.setModelDir(dirModel);
         modelName = modelI.getDefaultModelName(frameworkName);
-        refreshDirModelViews();;
+        refreshDirModelViews();
         refreshModelViews();
     }
     private void onSelectDirDataset() {
@@ -156,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         dirDataset = datasetI.getDirs()[index];
         datasetI.setDatasetDir(dirDataset);
         datasetName = datasetI.getDefaultDatasetName();
-        refreshDirDatasetViews();;
+        refreshDirDatasetViews();
         refreshDatasetViews();
     }
     private void onSelectFramework() {

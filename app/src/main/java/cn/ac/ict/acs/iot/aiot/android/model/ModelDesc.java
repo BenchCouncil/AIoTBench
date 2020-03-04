@@ -1,5 +1,7 @@
 package cn.ac.ict.acs.iot.aiot.android.model;
 
+import androidx.annotation.Nullable;
+
 import com.github.labowenzi.commonj.JUtil;
 
 import java.util.List;
@@ -52,8 +54,72 @@ public class ModelDesc {
     public static class BaseModelDesc {
         private String name;
 
+        /**
+         * how to convert a src bitmap to dest bitmap for the model;
+         */
+        private String bitmap_convert_method;
+
+        /**
+         * rgb type of the dest bitmap;
+         */
+        private String bitmap_rgb_type;
+
         public String getName() {
             return name;
+        }
+
+        public String getBitmap_convert_method() {
+            return bitmap_convert_method;
+        }
+        public BitmapConvertMethod getBitmapConvertMethod() {
+            return BitmapConvertMethod.get(bitmap_convert_method);
+        }
+
+        public String getBitmap_rgb_type() {
+            return bitmap_rgb_type;
+        }
+        public BitmapRgbType getBitmapRgbType() {
+            return BitmapRgbType.get(bitmap_rgb_type);
+        }
+        public boolean needToBgr() {
+            return getBitmapRgbType() == ModelDesc.BaseModelDesc.BitmapRgbType.BGR;
+        }
+
+        public enum BitmapConvertMethod {
+            DEFAULT,  // src --> crop or pad --> resize --> dest;
+            COPY,  // src --> copy --> dest;
+            ;
+
+            @Nullable
+            public static BitmapConvertMethod get(@Nullable String value) {
+                if (value == null) {
+                    return null;
+                }
+                for (BitmapConvertMethod item : values()) {
+                    if (item.name().toLowerCase().equals(value)) {
+                        return item;
+                    }
+                }
+                return null;
+            }
+        }
+        public enum BitmapRgbType {
+            DEFAULT,  // RGB, just copy;
+            BGR,  // ARGB --> ABGR
+            ;
+
+            @Nullable
+            public static BitmapRgbType get(@Nullable String value) {
+                if (value == null) {
+                    return null;
+                }
+                for (BitmapRgbType item : values()) {
+                    if (item.name().toLowerCase().equals(value)) {
+                        return item;
+                    }
+                }
+                return null;
+            }
         }
     }
 
@@ -62,6 +128,8 @@ public class ModelDesc {
         private String dir;
         private String init_net_pb;
         private String predict_net_pb;
+        private float[] norm_mean;
+        private float[] norm_std_dev;
 
         public String getDir() {
             return dir;
@@ -79,6 +147,14 @@ public class ModelDesc {
         }
         public String getPredict_net_pb_filepath(Model.ModelDir dir) {
             return dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + predict_net_pb;
+        }
+
+        public float[] getNorm_mean() {
+            return norm_mean;
+        }
+
+        public float[] getNorm_std_dev() {
+            return norm_std_dev;
         }
     }
 
@@ -104,6 +180,8 @@ public class ModelDesc {
         private String dir;
         private String net_tflite;
         private String quantization;
+        private float[] norm_mean;
+        private float[] norm_std_dev;
         private String labels;
 
         public String getDir() {
@@ -119,6 +197,14 @@ public class ModelDesc {
 
         public String getQuantization() {
             return quantization;
+        }
+
+        public float[] getNorm_mean() {
+            return norm_mean;
+        }
+
+        public float[] getNorm_std_dev() {
+            return norm_std_dev;
         }
 
         public String getLabels() {

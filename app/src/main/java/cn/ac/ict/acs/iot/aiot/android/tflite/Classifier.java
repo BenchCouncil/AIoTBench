@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /** A classifier specialized to label images using TensorFlow Lite. */
@@ -93,6 +94,7 @@ public abstract class Classifier {
   /** Labels corresponding to the output of the vision model. */
   private List<String> labels;
 
+  protected final boolean needToBgr;
   /** Input image TensorBuffer. */
   private TensorImage inputImageBuffer;
 
@@ -114,17 +116,25 @@ public abstract class Classifier {
   public static Classifier create(Activity activity, Model model, Device device, int numThreads, LogUtil.Log log)
       throws IOException {
     if (model == Model.QUANTIZED) {
-      return new ClassifierQuantizedMobileNet(activity, device, numThreads, log);
+      return new ClassifierQuantizedMobileNet(activity, device, numThreads, false, log);
     } else {
-      return new ClassifierFloatMobileNet(activity, device, numThreads, log);
+      return new ClassifierFloatMobileNet(activity, device, numThreads, false, log);
     }
   }
-  public static Classifier create(String net_tflite_filepath, Model model, Device device, int numThreads, String labelsFilePath, LogUtil.Log log)
+  public static Classifier create(String net_tflite_filepath, Model model, Device device, int numThreads, String labelsFilePath, ModelDesc.Tflite modelDesc, LogUtil.Log log)
           throws IOException {
+    boolean needToBgr = modelDesc != null && modelDesc.needToBgr();
+    if (modelDesc != null) {
+      float[] mean = modelDesc.getNorm_mean();
+      float[] std_dev = modelDesc.getNorm_std_dev();
+      if (!JUtil.isEmpty(mean) && !JUtil.isEmpty(std_dev) && mean.length == std_dev.length) {
+        return new ClassifierWithNorm(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, mean, std_dev, log);
+      }
+    }
     if (model == Model.QUANTIZED) {
-      return new ClassifierQuantizedMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+      return new ClassifierQuantizedMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
     } else {
-      return new ClassifierFloatMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, log);
+      return new ClassifierFloatMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
     }
   }
 
@@ -205,13 +215,14 @@ public abstract class Classifier {
   }
 
   /** Initializes a {@code Classifier}. */
-  protected Classifier(Activity activity, Device device, int numThreads, LogUtil.Log log) throws IOException {
-    this(activity, null, null, device, numThreads, log);
+  protected Classifier(Activity activity, Device device, int numThreads, boolean needToBgr, LogUtil.Log log) throws IOException {
+    this(activity, null, null, device, numThreads, needToBgr, log);
   }
-  protected Classifier(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, LogUtil.Log log) throws IOException {
-    this(null, net_tflite_filepath, labelsFilePath, device, numThreads, log);
+  protected Classifier(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log) throws IOException {
+    this(null, net_tflite_filepath, labelsFilePath, device, numThreads, needToBgr, log);
   }
-  protected Classifier(Activity activity, String net_tflite_filepath, String labelsFilePath, Device device, int numThreads, LogUtil.Log log) throws IOException {
+  protected Classifier(Activity activity, String net_tflite_filepath, String labelsFilePath, Device device, int numThreads, boolean needToBgr, LogUtil.Log log) throws IOException {
+    this.needToBgr = needToBgr;
     this.log = log;
     if (JUtil.isEmpty(net_tflite_filepath)) {
       tfliteModel = loadModelFile(activity);
@@ -364,15 +375,15 @@ public abstract class Classifier {
     inputImageBuffer.load(bitmap);
 
     // Creates processor for the TensorImage.
+    ImageProcessor.Builder builder = new ImageProcessor.Builder();
+    if (needToBgr) builder.add(new RgbToBgrOp());
     int cropSize = Math.min(bitmap.getWidth(), bitmap.getHeight());
     int numRoration = sensorOrientation / 90;
-    ImageProcessor imageProcessor =
-        new ImageProcessor.Builder()
-            .add(new ResizeWithCropOrPadOp(cropSize, cropSize))
+    builder.add(new ResizeWithCropOrPadOp(cropSize, cropSize))
             .add(new ResizeOp(imageSizeX, imageSizeY, ResizeMethod.NEAREST_NEIGHBOR))
             .add(new Rot90Op(numRoration))
-            .add(getPreprocessNormalizeOp())
-            .build();
+            .add(getPreprocessNormalizeOp());
+    ImageProcessor imageProcessor = builder.build();
     return imageProcessor.process(inputImageBuffer);
   }
 

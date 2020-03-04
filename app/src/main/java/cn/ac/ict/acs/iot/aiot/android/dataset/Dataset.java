@@ -27,6 +27,10 @@ public class Dataset {
         }
         return instance;
     }
+    public static Dataset resetInstance(Context context) {
+        instance = null;
+        return getInstance(context);
+    }
 
     public static final String DIR_FILE = "aiot/datasets";
     public static final String DIR_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + DIR_FILE;

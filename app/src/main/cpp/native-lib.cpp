@@ -24,6 +24,51 @@
 #define aloge(...) __android_log_print(ANDROID_LOG_ERROR, "AIoTCaffe2", __VA_ARGS__);
 #define alogd(...) __android_log_print(ANDROID_LOG_DEBUG, "AIoTCaffe2", __VA_ARGS__);
 
+class PredictorWrapper {
+public:
+    PredictorWrapper(
+            caffe2::Predictor *predictor,
+            bool needToBgr,
+            float norm_mean[], int norm_mean_cnt,
+            float norm_std_dev[], int norm_std_dev_cnt) {
+        this->predictor = predictor;
+        this->needToBgr = needToBgr;
+        this->norm_mean_cnt = norm_mean_cnt;
+        if (norm_mean_cnt <= 0) {
+            this->norm_mean = new float[1];
+        } else {
+            this->norm_mean = new float[norm_mean_cnt];
+            for (int i = 0; i < norm_mean_cnt; ++i) {
+                this->norm_mean[i] = norm_mean[i];
+            }
+        }
+        this->norm_std_dev_cnt = norm_std_dev_cnt;
+        if (norm_std_dev_cnt <= 0) {
+            this->norm_std_dev = new float[1];
+        } else {
+            this->norm_std_dev = new float[norm_std_dev_cnt];
+            for (int i = 0; i < norm_std_dev_cnt; ++i) {
+                this->norm_std_dev[i] = norm_std_dev[i];
+            }
+        }
+    }
+
+    virtual ~PredictorWrapper() {
+        delete norm_std_dev;
+        delete norm_mean;
+        delete predictor;
+    }
+
+    caffe2::Predictor *predictor;
+
+    bool needToBgr;
+
+    float *norm_mean;
+    int norm_mean_cnt;
+    float *norm_std_dev;
+    int norm_std_dev_cnt;
+};
+
 extern "C"
 jlong
 Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_loadNetByFile(
@@ -90,26 +135,68 @@ jlong
 Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_initCaffe2(
         JNIEnv *env,
         jobject /* this */,
-        jlong pInitNet, jlong pPredictNet) {
+        jlong pInitNet, jlong pPredictNet,
+        jboolean needToBgr,
+        jfloatArray normMean, jint normMeanCnt,
+        jfloatArray normStdDev, jint normStdDevCnt) {
     alogd("new predictor.");
     caffe2::NetDef *initNet = (caffe2::NetDef *)(pInitNet);
     caffe2::NetDef *predictNet = (caffe2::NetDef *)(pPredictNet);
     alogd("Instantiating predictor...");
     caffe2::Predictor *predictor = new caffe2::Predictor(*initNet, *predictNet);
+    bool toBgr = needToBgr == JNI_TRUE;
+
+    int norm_mean_cnt = normMeanCnt;
+    float *norm_mean;
+    if (norm_mean_cnt <= 0) {
+        norm_mean = NULL;
+    } else {
+        norm_mean = new float[norm_mean_cnt];
+        jfloat *mean_data = env->GetFloatArrayElements(normMean, 0);
+        for (int i=0; i<norm_mean_cnt; ++i) {
+            norm_mean[i] = mean_data[i];
+        }
+    }
+
+    int norm_std_dev_cnt = normStdDevCnt;
+    float *norm_std_dev;
+    if (norm_std_dev_cnt <= 0) {
+        norm_std_dev = NULL;
+    } else {
+        norm_std_dev = new float[norm_std_dev_cnt];
+        jfloat *std_dev_data = env->GetFloatArrayElements(normStdDev, 0);
+        for (int i=0; i<norm_std_dev_cnt; ++i) {
+            norm_std_dev[i] = std_dev_data[i];
+        }
+    }
+
+    PredictorWrapper *wrapper = new PredictorWrapper(predictor, toBgr, norm_mean, norm_mean_cnt, norm_std_dev, norm_std_dev_cnt);
     alogd("new predictor done.");
-    jlong p = (jlong)(predictor);
+    if (norm_mean != NULL) {
+        delete norm_mean;
+    }
+    if (norm_std_dev != NULL) {
+        delete norm_std_dev;
+    }
+    jlong p = (jlong)(wrapper);
     return p;
 }
 
+/**
+ * 可以考虑在native-lib中使用静态数组保存c对象，java对象需要申请该数组中保存
+ * 的某个c对象，类似于享元模式或者文件打开表。
+ * 这样就不用传递指针，以避免指针类型的问题。
+ */
 extern "C"
 void
 Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCaffe2(
         JNIEnv *env,
         jobject /* this */,
-        jlong pPredictor,
+        jlong pWrapper,
         jbyteArray R, jbyteArray G, jbyteArray B,
         jfloatArray result, jintArray resultCnt) {
-    caffe2::Predictor *predictor = (caffe2::Predictor *) pPredictor;
+    PredictorWrapper *wrapper = (PredictorWrapper *) pWrapper;
+    caffe2::Predictor *predictor = wrapper->predictor;
     if (!predictor) {
         int resultCntI = -1;
         env->SetIntArrayRegion(resultCnt, 0, 1, &resultCntI);
@@ -135,13 +222,43 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
             char g = g_row[j];
             char b = b_row[j];
 
-            auto b_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
-            auto g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
-            auto r_i = 2 * IMG_H * IMG_W + j * IMG_W + i;
+            auto b_i = 0;
+            auto g_i = 0;
+            auto r_i = 0;
+            bool toBgr = wrapper->needToBgr;
+            if (toBgr) {
+                b_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
+                g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
+                r_i = 2 * IMG_H * IMG_W + j * IMG_W + i;
+            } else {
+                r_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
+                g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
+                b_i = 2 * IMG_H * IMG_W + j * IMG_W + i;
+            }
 
-            input_data[r_i] = (float) (r / 255.0);
-            input_data[g_i] = (float) (g / 255.0);
-            input_data[b_i] = (float) (b / 255.0);
+            if (wrapper->norm_mean_cnt > 0
+                    && wrapper->norm_std_dev_cnt > 0
+                    && wrapper->norm_mean_cnt == wrapper->norm_std_dev_cnt) {
+                if (wrapper->norm_mean_cnt < 3) {
+                    // 1;
+                    float mean = wrapper->norm_mean[0];
+                    float std_dev = wrapper->norm_std_dev[0];
+                    input_data[r_i] = (r - mean) / std_dev;
+                    input_data[g_i] = (g - mean) / std_dev;
+                    input_data[b_i] = (b - mean) / std_dev;
+                } else {
+                    // 3;
+                    float *mean = wrapper->norm_mean;
+                    float *std_dev = wrapper->norm_std_dev;
+                    input_data[r_i] = (r - mean[0]) / std_dev[0];
+                    input_data[g_i] = (g - mean[1]) / std_dev[1];
+                    input_data[b_i] = (b - mean[2]) / std_dev[2];
+                }
+            } else {
+                input_data[r_i] = (float) (r / 255.0);
+                input_data[g_i] = (float) (g / 255.0);
+                input_data[b_i] = (float) (b / 255.0);
+            }
 
         }
     }

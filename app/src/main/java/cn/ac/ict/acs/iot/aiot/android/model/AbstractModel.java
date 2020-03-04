@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.github.labowenzi.commonj.ThreadPoolUtil;
@@ -36,8 +37,12 @@ public abstract class AbstractModel implements IModel {
     private boolean preDestroyed;
     private boolean workThreadRunning;
 
-    public AbstractModel(LogUtil.Log log) {
+    @Nullable
+    protected final ModelDesc.BaseModelDesc modelDesc;
+
+    public AbstractModel(@Nullable ModelDesc.BaseModelDesc modelDesc, LogUtil.Log log) {
         timeRecord = new StatisticsTime.TimeRecord();
+        this.modelDesc = modelDesc;
         this.log = log;
         this.destroyed = false;
         this.preDestroyed = false;
@@ -89,7 +94,7 @@ public abstract class AbstractModel implements IModel {
 
         log.loglnA("ic", "index", imageIndex, "bitmap", "start", StatisticsTime.TimeRecord.time());
         status.bitmapOri = BitmapFactory.decodeFile(imageFilePath);
-        status.bitmapCroped = BitmapUtil.centerCropResize(status.bitmapOri, getInputImageWidth(), getInputImageHeight());
+        status.bitmapCroped = convertBitmap(status.bitmapOri);
         log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
 
         try {
@@ -106,6 +111,19 @@ public abstract class AbstractModel implements IModel {
         time.setEnd();
         log.loglnA("ic", "index", imageIndex, "all", "end", time.end);
         log.loglnA("ic", "index", imageIndex, "all", "end", time);
+    }
+
+    @WorkerThread
+    protected Bitmap convertBitmap(Bitmap bitmapOri) {
+        if (modelDesc != null) {
+            ModelDesc.BaseModelDesc.BitmapConvertMethod m = modelDesc.getBitmapConvertMethod();
+            if (m == ModelDesc.BaseModelDesc.BitmapConvertMethod.DEFAULT) {
+                return BitmapUtil.centerCropResize(bitmapOri, getInputImageWidth(), getInputImageHeight());
+            } else if (m == ModelDesc.BaseModelDesc.BitmapConvertMethod.COPY) {
+                return bitmapOri.copy(bitmapOri.getConfig(), true);
+            }
+        }
+        return BitmapUtil.centerCropResize(bitmapOri, getInputImageWidth(), getInputImageHeight());
     }
 
     @WorkerThread

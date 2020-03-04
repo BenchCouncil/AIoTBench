@@ -3,6 +3,7 @@ package cn.ac.ict.acs.iot.aiot.android.tflite;
 import android.app.Activity;
 import android.graphics.Bitmap;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.github.labowenzi.commonj.JUtil;
@@ -29,7 +30,7 @@ public class TfLiteModels {
         if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) || m == null) {
             return null;
         }
-        return new TfLiteModelFromFile(log, m, filePath, labelsFilePath);
+        return new TfLiteModelFromFile(desc, log, m, filePath, labelsFilePath);
     }
     public static Classifier.Model getModel(ModelDesc.Tflite desc) {
         String q = desc.getQuantization();
@@ -44,10 +45,14 @@ public class TfLiteModels {
 
     public abstract static class TfLiteModel extends AbstractModel {
 
+        @Nullable
+        protected final ModelDesc.Tflite modelDesc;
+
         protected Classifier classifier;
 
-        public TfLiteModel(LogUtil.Log log) {
-            super(log);
+        public TfLiteModel(@Nullable ModelDesc.Tflite modelDesc, LogUtil.Log log) {
+            super(modelDesc, log);
+            this.modelDesc = modelDesc;
         }
 
         @Override
@@ -63,6 +68,21 @@ public class TfLiteModels {
         @Override
         public int getInputImageHeight() {
             return classifier.getImageSizeY();
+        }
+
+        @Override
+        @WorkerThread
+        protected Bitmap convertBitmap(Bitmap bitmapOri) {
+            if (modelDesc == null) {
+                return super.convertBitmap(bitmapOri);
+            }
+            ModelDesc.BaseModelDesc.BitmapConvertMethod m = modelDesc.getBitmapConvertMethod();
+            if (m != null) {
+                return super.convertBitmap(bitmapOri);
+            }
+            // model defined method;
+            log.loglnA("ic", "tflite", "unknown bitmap convert method: " + modelDesc.getBitmap_convert_method());
+            return super.convertBitmap(bitmapOri);
         }
 
         @Override
@@ -107,11 +127,11 @@ public class TfLiteModels {
         }
     }
     public static class TfLiteModelFromFile extends TfLiteModel {
-        public TfLiteModelFromFile(LogUtil.Log log, Classifier.Model model, String net_tflite_filepath, String labelsFilePath) {
-            super(log);
+        public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, Classifier.Model model, String net_tflite_filepath, String labelsFilePath) {
+            super(desc, log);
             try {
                 timeRecord.loadModel.setStart();
-                classifier = Classifier.create(net_tflite_filepath, model, Classifier.Device.CPU, 1, labelsFilePath, log);
+                classifier = Classifier.create(net_tflite_filepath, model, Classifier.Device.CPU, 1, labelsFilePath, desc, log);
                 timeRecord.loadModel.setEnd();
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {
@@ -122,7 +142,7 @@ public class TfLiteModels {
     }
     public abstract static class DefaultNet extends TfLiteModel {
         public DefaultNet(Activity activity, Classifier.Model model, LogUtil.Log log) {
-            super(log);
+            super(null, log);
             try {
                 timeRecord.loadModel.setStart();
                 classifier = Classifier.create(activity, model, Classifier.Device.CPU, 1, log);

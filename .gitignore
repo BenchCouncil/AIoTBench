@@ -8,3 +8,4 @@ build
 .externalNativeBuild
 .cxx
 .ipynb_checkpoints/
+*.log

@@ -32,6 +32,10 @@ public class Model {
         }
         return instance;
     }
+    public static Model resetInstance() {
+        instance = null;
+        return getInstance();
+    }
     public static final String FRAMEWORK_CAFFE2 = "caffe2";
     public static final String FRAMEWORK_PYTORCH = "pytorch";
     public static final String FRAMEWORK_TFLITE = "tflite";
@@ -69,9 +73,8 @@ public class Model {
 
     public void setModelDir(String dir) {
         if (JUtil.isEmpty(dir) || JUtil.isEmpty(dirs)) {
-            return;
-        } else {
             Log.e(TAG, "no dir or dirs");
+            return;
         }
         if (JUtil.inArray(dir, dirs)) {
             String dirPath = DIR_PATH + "/" + dir;
@@ -101,9 +104,6 @@ public class Model {
 
         public ModelDir(String dirPath) {
             this.dirPath = dirPath;
-            String filePath = dirPath + "/" + MODELS_FILE;
-            String json = JIoUtil.readJson(filePath);
-            ModelDesc desc = JJsonUtils.fromJson(json, ModelDesc.class);
             this.modelDesc = JJsonUtils.fromJson(JIoUtil.readJson(dirPath + "/" + MODELS_FILE), ModelDesc.class);
             init();
         }

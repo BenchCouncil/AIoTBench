@@ -4,6 +4,9 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 
+import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
+import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
+
 /**
  * Created by alanubu on 20-1-2.
  */
@@ -14,41 +17,57 @@ public class PredictorWrapper {
     private static final String TAG = "predictor";
     private static final long NULL = 0;
 
+    private final LogUtil.Log log;
+
     protected long pInitNet;
     protected long pPredictNet;
-    protected long pPredictor;
+    protected long pWrapper;
+
+    protected final boolean needToBgr;
+    protected final float[] normMean;
+    protected final float[] normStdDev;
 
     // todo: load net from file instead of asset;
     // test in other project;
     // https://github.com/facebookarchive/caffe2/issues/567#issuecomment-301969664
     protected native long loadNetByFile(String filePath);
     protected native long loadNet(AssetManager mgr, String fileName);
-    protected native long initCaffe2(long pInitNet, long pPredictNet);
+    protected native long initCaffe2(long pInitNet, long pPredictNet, boolean needToBgr, float[] normMean, int normMeanCnt, float[] normStdDev, int normStdDevCnt);
 
-    protected native void classificationFromCaffe2(long pPredictor, byte[] R, byte[] G, byte[] B, float[] result, int[] resultCnt);
+    protected native void classificationFromCaffe2(long pWrapper, byte[] R, byte[] G, byte[] B, float[] result, int[] resultCnt);
 
     protected native void deletePtr(long ptr);
 
-    public PredictorWrapper(String initNetFilePath, String predictNetFilePath) {
+    public PredictorWrapper(String initNetFilePath, String predictNetFilePath, ModelDesc.Caffe2 desc, LogUtil.Log log) {
+        this.log = log;
+        this.needToBgr = desc != null && desc.needToBgr();
+        this.normMean = desc == null ? null : desc.getNorm_mean();
+        int normMeanCnt = this.normMean == null ? -1 : this.normMean.length;
+        this.normStdDev = desc == null ? null : desc.getNorm_std_dev();
+        int normStdDevCnt = this.normStdDev == null ? -1 : this.normStdDev.length;
         this.pInitNet = loadNetByFile(initNetFilePath);
         this.pPredictNet = loadNetByFile(predictNetFilePath);
-        this.pPredictor = initCaffe2(pInitNet, pPredictNet);
+        this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, normMean, normMeanCnt, normStdDev, normStdDevCnt);
     }
-    public PredictorWrapper(AssetManager assetManager, String initNetFileName, String predictNetFileName) {
+    public PredictorWrapper(AssetManager assetManager, String initNetFileName, String predictNetFileName, LogUtil.Log log) {
+        this.log = log;
+        this.needToBgr = true;
+        this.normMean = null;
+        this.normStdDev = null;
         this.pInitNet = loadNet(assetManager, initNetFileName);
         this.pPredictNet = loadNet(assetManager, predictNetFileName);
-        this.pPredictor = initCaffe2(pInitNet, pPredictNet);
+        this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, null, -1, null, -1);
     }
 
     public boolean isStatusOk() {
         return pInitNet != NULL
                 && pPredictNet != NULL
-                && pPredictor != NULL;
+                && pWrapper != NULL;
     }
 
     public void destroy() {
-        destroy(pPredictor);
-        pPredictor = NULL;
+        destroy(pWrapper);
+        pWrapper = NULL;
         destroy(pPredictNet);
         pPredictNet = NULL;
         destroy(pInitNet);
@@ -65,8 +84,8 @@ public class PredictorWrapper {
         int w = bitmap.getWidth();
 
         byte[] R = new byte[h * w];
-        byte[] B = new byte[h * w];
         byte[] G = new byte[h * w];
+        byte[] B = new byte[h * w];
         float[] result = new float[1000];
         int[] resultCnt = new int[1];
         for (int i=0; i<result.length; ++i) {
@@ -85,7 +104,7 @@ public class PredictorWrapper {
                 B[i * w + j] = (byte) blue;
             }
         }
-        classificationFromCaffe2(pPredictor, R, G, B, result, resultCnt);
+        classificationFromCaffe2(pWrapper, R, G, B, result, resultCnt);
         return result;
     }
 }

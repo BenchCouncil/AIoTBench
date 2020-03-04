@@ -15,59 +15,48 @@ limitations under the License.
 
 package cn.ac.ict.acs.iot.aiot.android.tflite;
 
-import android.app.Activity;
-
-import java.io.IOException;
-
 import org.tensorflow.lite.support.common.TensorOperator;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
+
+import java.io.IOException;
 
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /** This TensorFlow Lite classifier works with the quantized MobileNet model. */
-public class ClassifierQuantizedMobileNet extends Classifier {
-
-  /**
-   * The quantized model does not require normalization, thus set mean as 0.0f, and std as 1.0f to
-   * bypass the normalization.
-   */
-  private static final float IMAGE_MEAN = 0.0f;
-
-  private static final float IMAGE_STD = 1.0f;
+public class ClassifierWithNorm extends Classifier {
 
   /** Quantized MobileNet requires additional dequantization to the output probability. */
   private static final float PROBABILITY_MEAN = 0.0f;
 
-  private static final float PROBABILITY_STD = 255.0f;
+  private static final float PROBABILITY_STD = 1.0f;
+
+  /** Float MobileNet requires additional normalization of the used input. */
+  private final float[] mean;
+  private final float[] std_dev;
 
   /**
    * Initializes a {@code ClassifierQuantizedMobileNet}.
    */
-  public ClassifierQuantizedMobileNet(Activity activity, Device device, int numThreads, boolean needToBgr, LogUtil.Log log)
-      throws IOException {
-    super(activity, device, numThreads, needToBgr, log);
-  }
-  public ClassifierQuantizedMobileNet(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log)
-      throws IOException {
+  public ClassifierWithNorm(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, float[] mean, float[] std_dev, LogUtil.Log log)
+          throws IOException {
     super(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
+    this.mean = mean;
+    this.std_dev = std_dev;
   }
 
   @Override
   protected String getModelPath() {
-    // you can download this file from
-    // see build.gradle for where to obtain this file. It should be auto
-    // downloaded into assets.
-    return "tflite/mobilenet_v1_1.0_224_quant.tflite";
+    return null;
   }
 
   @Override
   protected String getLabelPath() {
-    return "tflite/labels.txt";
+    return null;
   }
 
   @Override
   protected TensorOperator getPreprocessNormalizeOp() {
-    return new NormalizeOp(IMAGE_MEAN, IMAGE_STD);
+    return new NormalizeOp(mean, std_dev);
   }
 
   @Override

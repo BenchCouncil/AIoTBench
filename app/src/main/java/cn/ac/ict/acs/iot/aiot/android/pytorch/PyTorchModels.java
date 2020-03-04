@@ -3,6 +3,7 @@ package cn.ac.ict.acs.iot.aiot.android.pytorch;
 import android.content.Context;
 import android.graphics.Bitmap;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.github.labowenzi.commonj.log.Log;
@@ -29,7 +30,7 @@ public class PyTorchModels {
 
     public static PyTorchModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Pytorch desc) {
         String filePath = desc.getNet_pt_filepath(dir);
-        return new PyTorchModelFromFile(log, filePath);
+        return new PyTorchModelFromFile(desc, log, filePath);
     }
 
     public abstract static class PyTorchModel extends AbstractModel {
@@ -37,10 +38,14 @@ public class PyTorchModels {
         public static final int INPUT_TENSOR_WIDTH = 224;
         public static final int INPUT_TENSOR_HEIGHT = 224;
 
+        @Nullable
+        protected final ModelDesc.Pytorch modelDesc;
+
         protected Module module;
 
-        public PyTorchModel(LogUtil.Log log) {
-            super(log);
+        public PyTorchModel(@Nullable ModelDesc.Pytorch modelDesc, LogUtil.Log log) {
+            super(modelDesc, log);
+            this.modelDesc = modelDesc;
         }
 
         protected static Module loadFromAssetFile(Context context, String filename) {
@@ -76,6 +81,21 @@ public class PyTorchModels {
 
         @Override
         @WorkerThread
+        protected Bitmap convertBitmap(Bitmap bitmapOri) {
+            if (modelDesc == null) {
+                return super.convertBitmap(bitmapOri);
+            }
+            ModelDesc.BaseModelDesc.BitmapConvertMethod m = modelDesc.getBitmapConvertMethod();
+            if (m != null) {
+                return super.convertBitmap(bitmapOri);
+            }
+            // model defined method;
+            log.loglnA("ic", "pytorch", "unknown bitmap convert method: " + modelDesc.getBitmap_convert_method());
+            return super.convertBitmap(bitmapOri);
+        }
+
+        @Override
+        @WorkerThread
         protected StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(bitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
@@ -93,8 +113,8 @@ public class PyTorchModels {
     }
 
     public static class PyTorchModelFromFile extends PyTorchModel {
-        public PyTorchModelFromFile(LogUtil.Log log, String filePath) {
-            super(log);
+        public PyTorchModelFromFile(ModelDesc.Pytorch desc, LogUtil.Log log, String filePath) {
+            super(desc, log);
             timeRecord.loadModel.setStart();
             module = Module.load(filePath);
             timeRecord.loadModel.setEnd();
@@ -106,7 +126,7 @@ public class PyTorchModels {
         public static final String assetFile = "pytorch/mobilenet_quantized_scripted_925.pt";
 
         public MobileNet_925(Context context, LogUtil.Log log) {
-            super(log);
+            super(null, log);
             timeRecord.loadModel.setStart();
             module = loadFromAssetFile(context, assetFile);
             timeRecord.loadModel.setEnd();
@@ -118,7 +138,7 @@ public class PyTorchModels {
         public static final String assetFile = "pytorch/resnet18.pt";
 
         public ResNet18(Context context, LogUtil.Log log) {
-            super(log);
+            super(null, log);
             timeRecord.loadModel.setStart();
             module = loadFromAssetFile(context, assetFile);
             timeRecord.loadModel.setEnd();
