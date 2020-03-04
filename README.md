@@ -66,7 +66,9 @@ code from: [**Tensorflow lite android**](https://github.com/tensorflow/examples/
           "name": "inception_v3",
           "dir": "inception_v3",
           "init_net_pb": "inception_v3_init.pb",
-          "predict_net_pb": "inception_v3_predict.pb"
+          "predict_net_pb": "inception_v3_predict.pb",
+          "norm_mean": [127.5,127.5,127.5],
+          "norm_std_dev": [1.0,1.0,1.0]
         }
       ],
       "pytorch": [
@@ -82,7 +84,11 @@ code from: [**Tensorflow lite android**](https://github.com/tensorflow/examples/
           "dir": "inception_v3",
           "net_tflite": "inception_v3.tflite",
           "quantization": "float",
-          "labels": "labels.txt"
+          "norm_mean": [127.5],
+          "norm_std_dev": [127.5],
+          "labels": "labels.txt",
+          "bitmap_convert_method": "copy",
+          "bitmap_rgb_type": "default"
         }
       ]
     }
