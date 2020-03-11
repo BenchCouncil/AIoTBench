@@ -48,15 +48,6 @@ public class PyTorchModels {
             this.modelDesc = modelDesc;
         }
 
-        protected static Module loadFromAssetFile(Context context, String filename) {
-            try {
-                return Module.load(Util.assetFilePath(context, filename));
-            } catch (IOException e) {
-                Log.e("load module", "Error reading assets", e);
-                return null;
-            }
-        }
-
         @Override
         public boolean isStatusOk() {
             return module != null;
@@ -117,30 +108,6 @@ public class PyTorchModels {
             super(desc, log);
             timeRecord.loadModel.setStart();
             module = Module.load(filePath);
-            timeRecord.loadModel.setEnd();
-            log.logln("load model: " + timeRecord.loadModel);
-        }
-    }
-
-    public static class MobileNet_925 extends PyTorchModel {
-        public static final String assetFile = "pytorch/mobilenet_quantized_scripted_925.pt";
-
-        public MobileNet_925(Context context, LogUtil.Log log) {
-            super(null, log);
-            timeRecord.loadModel.setStart();
-            module = loadFromAssetFile(context, assetFile);
-            timeRecord.loadModel.setEnd();
-            log.logln("load model: " + timeRecord.loadModel);
-        }
-    }
-
-    public static class ResNet18 extends PyTorchModel {
-        public static final String assetFile = "pytorch/resnet18.pt";
-
-        public ResNet18(Context context, LogUtil.Log log) {
-            super(null, log);
-            timeRecord.loadModel.setStart();
-            module = loadFromAssetFile(context, assetFile);
             timeRecord.loadModel.setEnd();
             log.logln("load model: " + timeRecord.loadModel);
         }

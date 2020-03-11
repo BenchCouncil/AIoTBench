@@ -52,12 +52,12 @@ public class Caffe2Models {
 
         @Override
         public int getInputImageWidth() {
-            return 227;
+            return 224;
         }
 
         @Override
         public int getInputImageHeight() {
-            return 227;
+            return 224;
         }
 
         @Override
@@ -97,35 +97,6 @@ public class Caffe2Models {
             log.logln("load model: " + timeRecord.loadModel);
         }
     }
-    public abstract static class DefaultNet extends Caffe2Model {
-        public DefaultNet(Activity activity, LogUtil.Log log, String initNetFileName, String predictNetFileName) {
-            super(null, log);
-            timeRecord.loadModel.setStart();
-            AssetManager assetManager = activity.getAssets();
-            predictor = new PredictorWrapper(assetManager, initNetFileName, predictNetFileName, log);
-            timeRecord.loadModel.setEnd();
-            log.logln("load model: " + timeRecord.loadModel);
-        }
-    }
 
-    public static class MobileNet extends DefaultNet {
-        public MobileNet(Activity activity, LogUtil.Log log) {
-            super(activity, log, "caffe2/mobilenet_init_net_v2.pb", "caffe2/mobilenet_predict_net_v2.pb");
-        }
-    }
-    public static class ResNet18 extends DefaultNet {
-        public ResNet18(Activity activity, LogUtil.Log log) {
-            super(activity, log, "caffe2/resnet18_init_net_v1.pb", "caffe2/resnet18_predict_net_v1.pb");
-        }
-    }
-    public static class SqueezeNet extends DefaultNet {
-        public SqueezeNet(Activity activity, LogUtil.Log log) {
-            super(activity, log, "caffe2/squeeze_init_net_v1.pb", "caffe2/squeeze_predict_net_v1.pb");
-        }
-    }
-    public static class UnknowNet extends DefaultNet {
-        public UnknowNet(Activity activity, LogUtil.Log log) {
-            super(activity, log, "caffe2/unknow_init_net.pb", "caffe2/unknow_predict_net.pb");
-        }
-    }
+
 }

@@ -60,12 +60,6 @@ public abstract class Classifier {
 
   protected final LogUtil.Log log;
 
-  /** The model type used for classification. */
-  public enum Model {
-    FLOAT,
-    QUANTIZED,
-  }
-
   /** The runtime device type used for executing classification. */
   public enum Device {
     CPU,
@@ -104,38 +98,16 @@ public abstract class Classifier {
   /** Processer to apply post processing of the output probability. */
   private final TensorProcessor probabilityProcessor;
 
-  /**
-   * Creates a classifier with the provided configuration.
-   *
-   * @param activity The current Activity.
-   * @param model The model to use for classification.
-   * @param device The device to use for classification.
-   * @param numThreads The number of threads to use for classification.
-   * @return A classifier with the desired configuration.
-   */
-  public static Classifier create(Activity activity, Model model, Device device, int numThreads, LogUtil.Log log)
-      throws IOException {
-    if (model == Model.QUANTIZED) {
-      return new ClassifierQuantizedMobileNet(activity, device, numThreads, false, log);
-    } else {
-      return new ClassifierFloatMobileNet(activity, device, numThreads, false, log);
-    }
-  }
-  public static Classifier create(String net_tflite_filepath, Model model, Device device, int numThreads, String labelsFilePath, ModelDesc.Tflite modelDesc, LogUtil.Log log)
+  public static Classifier create(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, ModelDesc.Tflite modelDesc, LogUtil.Log log)
           throws IOException {
     boolean needToBgr = modelDesc != null && modelDesc.needToBgr();
-    if (modelDesc != null) {
+    //if (modelDesc != null) {
       float[] mean = modelDesc.getNorm_mean();
       float[] std_dev = modelDesc.getNorm_std_dev();
-      if (!JUtil.isEmpty(mean) && !JUtil.isEmpty(std_dev) && mean.length == std_dev.length) {
+      //if (!JUtil.isEmpty(mean) && !JUtil.isEmpty(std_dev) && mean.length == std_dev.length) {
         return new ClassifierWithNorm(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, mean, std_dev, log);
-      }
-    }
-    if (model == Model.QUANTIZED) {
-      return new ClassifierQuantizedMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
-    } else {
-      return new ClassifierFloatMobileNet(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
-    }
+      //}
+    //}
   }
 
   /** An immutable result returned by a Classifier describing what was recognized. */
@@ -215,9 +187,6 @@ public abstract class Classifier {
   }
 
   /** Initializes a {@code Classifier}. */
-  protected Classifier(Activity activity, Device device, int numThreads, boolean needToBgr, LogUtil.Log log) throws IOException {
-    this(activity, null, null, device, numThreads, needToBgr, log);
-  }
   protected Classifier(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log) throws IOException {
     this(null, net_tflite_filepath, labelsFilePath, device, numThreads, needToBgr, log);
   }
@@ -315,15 +284,12 @@ public abstract class Classifier {
 
   /** Runs inference and returns the classification results. */
   public List<Recognition> recognizeImage(final Bitmap bitmap) {
-    return recognizeImage(bitmap, 0);
-  }
-  public List<Recognition> recognizeImage(final Bitmap bitmap, int sensorOrientation) {
     // Logs this method so that it can be analyzed with systrace.
     Trace.beginSection("recognizeImage");
 
     Trace.beginSection("loadImage");
     long startTimeForLoadImage = SystemClock.uptimeMillis();
-    inputImageBuffer = loadImage(bitmap, sensorOrientation);
+    inputImageBuffer = loadImage(bitmap);
     long endTimeForLoadImage = SystemClock.uptimeMillis();
     Trace.endSection();
 //    Log.v(TAG, "Timecost to load the image: " + (endTimeForLoadImage - startTimeForLoadImage));
@@ -370,18 +336,16 @@ public abstract class Classifier {
   }
 
   /** Loads input image, and applies preprocessing. */
-  private TensorImage loadImage(final Bitmap bitmap, int sensorOrientation) {
+  private TensorImage loadImage(final Bitmap bitmap) {
     // Loads bitmap into a TensorImage.
     inputImageBuffer.load(bitmap);
 
     // Creates processor for the TensorImage.
     ImageProcessor.Builder builder = new ImageProcessor.Builder();
-    if (needToBgr) builder.add(new RgbToBgrOp());
+   // if (needToBgr) builder.add(new RgbToBgrOp());
     int cropSize = Math.min(bitmap.getWidth(), bitmap.getHeight());
-    int numRoration = sensorOrientation / 90;
     builder.add(new ResizeWithCropOrPadOp(cropSize, cropSize))
             .add(new ResizeOp(imageSizeX, imageSizeY, ResizeMethod.NEAREST_NEIGHBOR))
-            .add(new Rot90Op(numRoration))
             .add(getPreprocessNormalizeOp());
     ImageProcessor imageProcessor = builder.build();
     return imageProcessor.process(inputImageBuffer);

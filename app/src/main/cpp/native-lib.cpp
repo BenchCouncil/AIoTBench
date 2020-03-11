@@ -17,8 +17,8 @@
 #include <ATen/ATen.h>
 #include "classes.h"
 
-#define IMG_H 227
-#define IMG_W 227
+#define IMG_H 224
+#define IMG_W 224
 #define IMG_C 3
 #define MAX_DATA_SIZE IMG_H * IMG_W * IMG_C
 #define aloge(...) __android_log_print(ANDROID_LOG_ERROR, "AIoTCaffe2", __VA_ARGS__);

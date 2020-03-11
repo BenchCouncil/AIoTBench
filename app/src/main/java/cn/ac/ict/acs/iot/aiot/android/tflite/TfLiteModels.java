@@ -26,21 +26,11 @@ public class TfLiteModels {
     public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Tflite desc) {
         String filePath = desc.getNet_tflite_filepath(dir);
         String labelsFilePath = desc.getLabels_filepath(dir);
-        Classifier.Model m = getModel(desc);
-        if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) || m == null) {
+
+        if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) ) {
             return null;
         }
-        return new TfLiteModelFromFile(desc, log, m, filePath, labelsFilePath);
-    }
-    public static Classifier.Model getModel(ModelDesc.Tflite desc) {
-        String q = desc.getQuantization();
-        Classifier.Model[] models = Classifier.Model.values();
-        for (Classifier.Model m : models) {
-            if (m.name().toLowerCase().equals(q)) {
-                return m;
-            }
-        }
-        return Classifier.Model.FLOAT;
+        return new TfLiteModelFromFile(desc, log,  filePath, labelsFilePath);
     }
 
     public abstract static class TfLiteModel extends AbstractModel {
@@ -127,25 +117,11 @@ public class TfLiteModels {
         }
     }
     public static class TfLiteModelFromFile extends TfLiteModel {
-        public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, Classifier.Model model, String net_tflite_filepath, String labelsFilePath) {
+        public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, String net_tflite_filepath, String labelsFilePath) {
             super(desc, log);
             try {
                 timeRecord.loadModel.setStart();
-                classifier = Classifier.create(net_tflite_filepath, model, Classifier.Device.CPU, 1, labelsFilePath, desc, log);
-                timeRecord.loadModel.setEnd();
-                log.logln("load model: " + timeRecord.loadModel);
-            } catch (IOException e) {
-                classifier = null;
-                e.printStackTrace();
-            }
-        }
-    }
-    public abstract static class DefaultNet extends TfLiteModel {
-        public DefaultNet(Activity activity, Classifier.Model model, LogUtil.Log log) {
-            super(null, log);
-            try {
-                timeRecord.loadModel.setStart();
-                classifier = Classifier.create(activity, model, Classifier.Device.CPU, 1, log);
+                classifier = Classifier.create(net_tflite_filepath, Classifier.Device.CPU, 1, labelsFilePath, desc, log);
                 timeRecord.loadModel.setEnd();
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {
@@ -155,14 +131,5 @@ public class TfLiteModels {
         }
     }
 
-    public static class MobileNetFloat extends DefaultNet {
-        public MobileNetFloat(Activity activity, LogUtil.Log log) {
-            super(activity, Classifier.Model.FLOAT, log);
-        }
-    }
-    public static class MobileNetQuantized extends DefaultNet {
-        public MobileNetQuantized(Activity activity, LogUtil.Log log) {
-            super(activity, Classifier.Model.QUANTIZED, log);
-        }
-    }
+
 }
