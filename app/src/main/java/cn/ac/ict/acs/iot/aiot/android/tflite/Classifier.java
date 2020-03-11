@@ -17,6 +17,7 @@ package cn.ac.ict.acs.iot.aiot.android.tflite;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
@@ -337,6 +338,21 @@ public abstract class Classifier {
 
   /** Loads input image, and applies preprocessing. */
   private TensorImage loadImage(final Bitmap bitmap) {
+
+    //if (needToBgr) {
+    if (true) {
+      for (int i = 0; i < bitmap.getWidth(); ++i) {
+        for (int j = 0; j < bitmap.getHeight(); ++j) {
+          int px = bitmap.getPixel(i, j);
+          int a = Color.alpha(px);
+          int r = Color.red(px);
+          int g = Color.green(px);
+          int b = Color.blue(px);
+          px = Color.argb(a, r, g, b);
+          bitmap.setPixel(i, j, px);
+        }
+      }
+    }
     // Loads bitmap into a TensorImage.
     inputImageBuffer.load(bitmap);
 
@@ -347,6 +363,11 @@ public abstract class Classifier {
     builder.add(new ResizeWithCropOrPadOp(cropSize, cropSize))
             .add(new ResizeOp(imageSizeX, imageSizeY, ResizeMethod.NEAREST_NEIGHBOR))
             .add(getPreprocessNormalizeOp());
+    //int th = bitmap.getWidth() > bitmap.getHeight() ? 256 : 256*bitmap.getHeight()/bitmap.getWidth();
+    //int tw = bitmap.getWidth() > bitmap.getHeight() ? 256*bitmap.getWidth()/bitmap.getHeight() : 256 ;
+    //builder.add(new ResizeOp(th, tw, ResizeMethod.NEAREST_NEIGHBOR))
+    //        .add(new ResizeWithCropOrPadOp(imageSizeX, imageSizeY))
+    //        .add(getPreprocessNormalizeOp());
     ImageProcessor imageProcessor = builder.build();
     return imageProcessor.process(inputImageBuffer);
   }
