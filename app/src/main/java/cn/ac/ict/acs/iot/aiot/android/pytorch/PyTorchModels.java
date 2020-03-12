@@ -1,19 +1,14 @@
 package cn.ac.ict.acs.iot.aiot.android.pytorch;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import com.github.labowenzi.commonj.log.Log;
-
 import org.pytorch.IValue;
 import org.pytorch.Module;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
-
-import java.io.IOException;
 
 import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
@@ -21,7 +16,6 @@ import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
-import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
 /**
  * Created by alanubu on 19-12-26.
@@ -96,7 +90,7 @@ public class PyTorchModels {
 
             log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
             final float[] scores = outputTensor.getDataAsFloatArray();
-            StatisticsScore statistics = new StatisticsScore(scores);
+            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
             statistics.calc();
             statistics.updateHit(target);
             return statistics;

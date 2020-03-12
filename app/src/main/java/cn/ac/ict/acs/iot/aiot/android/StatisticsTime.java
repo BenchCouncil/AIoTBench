@@ -18,11 +18,11 @@ public class StatisticsTime {
 
         public Statistics statistics;
 
-        public void calc() {
+        public void calc(int timeRecordTopK) {
             if (images == null) {
                 statistics = null;
             } else {
-                statistics = new Statistics(images);
+                statistics = new Statistics(timeRecordTopK, images);
                 statistics.calc();
             }
         }
@@ -84,8 +84,8 @@ public class StatisticsTime {
         public double lastTime;
         public double avgWithoutFirstTime;
 
-        public Statistics(TimeRecord.StartEndTime[] data) {
-            super(toLong(data));
+        public Statistics(int topK, TimeRecord.StartEndTime[] data) {
+            super(topK, toLong(data));
         }
 
         @Override

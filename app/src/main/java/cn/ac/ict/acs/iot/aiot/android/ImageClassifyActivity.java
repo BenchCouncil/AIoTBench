@@ -34,6 +34,9 @@ public class ImageClassifyActivity extends AppCompatActivity {
     public static final String EXTRA_MODEL_NAME = "extra_model_name";
     public static final String EXTRA_DATASET_NAME = "extra_dataset_name";
 
+    public static final int TIME_RECORD_TOP_K = 3;
+    public static final int SCORE_TOP_K = 5;
+
     private Model modelI;
     private Dataset datasetI;
 
@@ -150,6 +153,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
         if (model != null) {
             model.handler = mHandler;
             model.what = AbstractModel.HANDLER_DO_IMAGE_CLASSIFICATION;
+            model.scoreTopK = SCORE_TOP_K;
             if (dataset != null) {
                 model.dataset = dataset;
             } else {
@@ -196,7 +200,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
             }
         }
         String resultText = result.toString();
-        timeRecord.calc();
+        timeRecord.calc(TIME_RECORD_TOP_K);
         String time = "time " + timeRecord;
 
         mResult.setText(resultText);

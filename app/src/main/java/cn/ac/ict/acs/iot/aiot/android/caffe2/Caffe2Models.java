@@ -1,7 +1,5 @@
 package cn.ac.ict.acs.iot.aiot.android.caffe2;
 
-import android.app.Activity;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 
 import androidx.annotation.Nullable;
@@ -82,7 +80,7 @@ public class Caffe2Models {
             log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
 
             log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
-            StatisticsScore statistics = new StatisticsScore(scores);
+            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
             statistics.calc();
             statistics.updateHit(target);
             return statistics;

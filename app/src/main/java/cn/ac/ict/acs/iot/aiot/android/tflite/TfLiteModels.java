@@ -1,6 +1,5 @@
 package cn.ac.ict.acs.iot.aiot.android.tflite;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 
 import androidx.annotation.Nullable;
@@ -83,7 +82,7 @@ public class TfLiteModels {
 
             log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
             final float[] scores = getDataAsFloatArray(results);
-            StatisticsScore statistics = new StatisticsScore(scores);
+            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
             statistics.calc();
             statistics.updateHit(target);
             return statistics;

@@ -6,14 +6,23 @@ package cn.ac.ict.acs.iot.aiot.android.util;
 public class MathUtil {
 
     public abstract static class Statistics {
-        public static final int TOP_K_MAX = 3;
+        public static final int DEFAULT_TOP_K = 3;
 
-        public double[] max = new double[TOP_K_MAX];
-        public int[] maxIndex = new int[max.length];
-        public double[] min = new double[TOP_K_MAX];
-        public int[] minIndex = new int[min.length];
+        public final int topK;
+        public final double[] max;
+        public final int[] maxIndex;
+        public final double[] min;
+        public final int[] minIndex;
         public double avg;
         public double sd;  // standard deviation
+
+        public Statistics(int topK) {
+            this.topK = topK;
+            max = new double[topK];
+            maxIndex = new int[max.length];
+            min = new double[topK];
+            minIndex = new int[min.length];
+        }
 
         public abstract int length();
         public abstract double get(int index);
@@ -90,7 +99,8 @@ public class MathUtil {
     public static class StatisticsFloat extends Statistics {
         public final float[] data;
 
-        public StatisticsFloat(float[] data) {
+        public StatisticsFloat(int topK, float[] data) {
+            super(topK);
             this.data = data;
         }
 
@@ -107,7 +117,8 @@ public class MathUtil {
     public static class StatisticsInt extends Statistics {
         public final int[] data;
 
-        public StatisticsInt(int[] data) {
+        public StatisticsInt(int topK, int[] data) {
+            super(topK);
             this.data = data;
         }
 
@@ -124,7 +135,8 @@ public class MathUtil {
     public static class StatisticsLong extends Statistics {
         public final long[] data;
 
-        public StatisticsLong(long[] data) {
+        public StatisticsLong(int topK, long[] data) {
+            super(topK);
             this.data = data;
         }
 

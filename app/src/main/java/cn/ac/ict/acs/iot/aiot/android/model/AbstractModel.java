@@ -16,6 +16,7 @@ import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.dataset.IDataset;
 import cn.ac.ict.acs.iot.aiot.android.util.BitmapUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
+import cn.ac.ict.acs.iot.aiot.android.util.MathUtil;
 
 /**
  * Created by alanubu on 20-1-20.
@@ -32,6 +33,7 @@ public abstract class AbstractModel implements IModel {
     public IDataset dataset;
 
     public final LogUtil.Log log;
+    public int scoreTopK = MathUtil.Statistics.DEFAULT_TOP_K;
 
     private boolean destroyed;
     private boolean preDestroyed;
@@ -65,7 +67,7 @@ public abstract class AbstractModel implements IModel {
             return;
         }
         timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
-        Status status = new Status();
+        Status status = new Status(scoreTopK);
         sendMsg(-1, status);
         for (int i=0; i<dataset.size(); i++) {
             if (isDestroyed() || isPreDestroyed()) {
@@ -166,9 +168,12 @@ public abstract class AbstractModel implements IModel {
     }
 
     public static class Status {
-        public StatisticsScore.HitStatistic statistics = new StatisticsScore.HitStatistic();
+        public StatisticsScore.HitStatistic statistics;
         public Bitmap bitmapOri = null;
         public Bitmap bitmapCroped = null;
 
+        public Status(int scoreTopK) {
+            statistics = new StatisticsScore.HitStatistic(scoreTopK);
+        }
     }
 }

@@ -15,8 +15,8 @@ public class StatisticsScore {
     public int target;
     public float firstHitRecognitionDepth;
 
-    public StatisticsScore(float[] scores) {
-        this.scores = new MathUtil.StatisticsFloat(scores);
+    public StatisticsScore(int topK, float[] scores) {
+        this.scores = new MathUtil.StatisticsFloat(topK, scores);
         this.maxHit = new boolean[this.scores.max.length];
 
         this.target = -1;
@@ -73,11 +73,15 @@ public class StatisticsScore {
     }
 
     public static class HitStatistic {
+        public final int topK;
         public int count;
-        public int[] topKMaxHit = new int[MathUtil.Statistics.TOP_K_MAX];
-        public float[] topKMaxHitA = new float[MathUtil.Statistics.TOP_K_MAX];
+        public final int[] topKMaxHit;
+        public final float[] topKMaxHitA;
 
-        public HitStatistic() {
+        public HitStatistic(int topK) {
+            this.topK = topK;
+            topKMaxHit = new int[topK];
+            topKMaxHitA = new float[topK];
             count = 0;
             for (int i=0; i<topKMaxHit.length; ++i) {
                 topKMaxHit[i] = 0;
