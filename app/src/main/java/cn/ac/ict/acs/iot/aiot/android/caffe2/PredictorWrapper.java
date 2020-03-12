@@ -40,7 +40,8 @@ public class PredictorWrapper {
 
     public PredictorWrapper(String initNetFilePath, String predictNetFilePath, ModelDesc.Caffe2 desc, LogUtil.Log log) {
         this.log = log;
-        this.needToBgr = desc != null && desc.needToBgr();
+        //this.needToBgr = (desc != null) && (desc.needToBgr());
+        this.needToBgr = desc.needToBgr();
         this.normMean = desc == null ? null : desc.getNorm_mean();
         int normMeanCnt = this.normMean == null ? -1 : this.normMean.length;
         this.normStdDev = desc == null ? null : desc.getNorm_std_dev();
@@ -48,15 +49,6 @@ public class PredictorWrapper {
         this.pInitNet = loadNetByFile(initNetFilePath);
         this.pPredictNet = loadNetByFile(predictNetFilePath);
         this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, normMean, normMeanCnt, normStdDev, normStdDevCnt);
-    }
-    public PredictorWrapper(AssetManager assetManager, String initNetFileName, String predictNetFileName, LogUtil.Log log) {
-        this.log = log;
-        this.needToBgr = true;
-        this.normMean = null;
-        this.normStdDev = null;
-        this.pInitNet = loadNet(assetManager, initNetFileName);
-        this.pPredictNet = loadNet(assetManager, predictNetFileName);
-        this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, null, -1, null, -1);
     }
 
     public boolean isStatusOk() {

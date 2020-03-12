@@ -75,9 +75,9 @@ public class ModelDesc {
             return BitmapConvertMethod.get(bitmap_convert_method);
         }
 
-        public String getBitmap_rgb_type() {
-            return bitmap_rgb_type;
-        }
+        //public String getBitmap_rgb_type() {
+        //    return bitmap_rgb_type;
+        //}
         public BitmapRgbType getBitmapRgbType() {
             return BitmapRgbType.get(bitmap_rgb_type);
         }

@@ -144,7 +144,7 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_initCaffe2(
     caffe2::NetDef *predictNet = (caffe2::NetDef *)(pPredictNet);
     alogd("Instantiating predictor...");
     caffe2::Predictor *predictor = new caffe2::Predictor(*initNet, *predictNet);
-    bool toBgr = needToBgr == JNI_TRUE;
+    bool toBgr = (needToBgr == JNI_TRUE);
 
     int norm_mean_cnt = normMeanCnt;
     float *norm_mean;
@@ -227,6 +227,7 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
             auto r_i = 0;
             bool toBgr = wrapper->needToBgr;
             if (toBgr) {
+            //if (1) {
                 b_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
                 g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
                 r_i = 2 * IMG_H * IMG_W + j * IMG_W + i;

@@ -339,8 +339,8 @@ public abstract class Classifier {
   /** Loads input image, and applies preprocessing. */
   private TensorImage loadImage(final Bitmap bitmap) {
 
-    //if (needToBgr) {
-    if (true) {
+    if (needToBgr) {
+    //if (true) {
       for (int i = 0; i < bitmap.getWidth(); ++i) {
         for (int j = 0; j < bitmap.getHeight(); ++j) {
           int px = bitmap.getPixel(i, j);
@@ -348,7 +348,7 @@ public abstract class Classifier {
           int r = Color.red(px);
           int g = Color.green(px);
           int b = Color.blue(px);
-          px = Color.argb(a, r, g, b);
+          px = Color.argb(a, b, g, r);
           bitmap.setPixel(i, j, px);
         }
       }
