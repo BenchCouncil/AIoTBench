@@ -14,9 +14,13 @@ public class StatisticsTime {
         public StartEndTime loadModel = new StartEndTime();
         public StartEndTime loadDataset = new StartEndTime();
 
+        public StartEndTime imageClassificationTotal = new StartEndTime();
         public StartEndTime[] images = null;
 
         public Statistics statistics;
+
+        public TimeRecord() {
+        }
 
         public void calc(int timeRecordTopK) {
             if (images == null) {
@@ -34,18 +38,17 @@ public class StatisticsTime {
             s.append("load model=").append(loadModel.diff());
             s.append(", load dataset=").append(loadDataset.diff());
             if (statistics != null) {
-                s.append(", images.len=").append(statistics.length());
-                s.append("\n" + "maxIndex=").append(statistics.maxIndex[0]);
-                s.append(' ' + "max=").append(statistics.max[0]);
-                s.append(", " + "minIndex=").append(statistics.minIndex[0]);
-                s.append(' ' + "min=").append(statistics.min[0]);
-                s.append(", avg=").append(statistics.avg)
-                        .append(", sd=").append(statistics.sd);
-                s.append("\nfirstTime=").append(statistics.firstTime)
-                        .append(", lastTime=").append(statistics.lastTime);
-                s.append(", avgWithoutFirstTime=").append(statistics.avgWithoutFirstTime);
+                s.append("\navg=").append(floatFormat(statistics.avg))
+                        .append(", sd=").append(floatFormat(statistics.sd));
+                s.append("\nfirstTime=").append(floatFormat(statistics.firstTime))
+                        .append(", lastTime=").append(floatFormat(statistics.lastTime));
+                s.append(", avgWithoutFirstTime=").append(floatFormat(statistics.avgWithoutFirstTime));
             }
+            s.append("\nimage classification total = ").append(imageClassificationTotal.diff());
             return s.toString();
+        }
+        private String floatFormat(double f) {
+            return String.format("%.2f", f);
         }
 
         public static class StartEndTime {

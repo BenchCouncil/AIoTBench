@@ -142,9 +142,15 @@ public class ImageClassifyActivity extends AppCompatActivity {
     }
 
     private void setViewsByData() {
+        StringBuilder infoSb = new StringBuilder();
+        infoSb.append("framework: ").append(frameworkName);
+        infoSb.append("\nmodel: ").append(modelName);
+        infoSb.append("\ndataset: ").append(datasetName);
         if (dataset != null) {
-            mImageInfo.setText(dataset.toString());
+                infoSb.append(",  classes[").append(dataset.getClassesInfo().getSize()).append("]")
+                    .append(", files[").append(dataset.size()).append("]");
         }
+        mImageInfo.setText(infoSb.toString());
         mResult.setText(null);
         mTimeRecord.setText(null);
     }

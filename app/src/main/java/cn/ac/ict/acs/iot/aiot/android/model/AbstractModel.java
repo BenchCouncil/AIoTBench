@@ -69,6 +69,7 @@ public abstract class AbstractModel implements IModel {
         timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
         Status status = new Status(scoreTopK);
         sendMsg(-1, status);
+        timeRecord.imageClassificationTotal.setStart();
         for (int i=0; i<dataset.size(); i++) {
             if (isDestroyed() || isPreDestroyed()) {
                 break;
@@ -76,6 +77,7 @@ public abstract class AbstractModel implements IModel {
             doImageClassificationContinue(i, status);
             sendMsg(i, status);
         }
+        timeRecord.imageClassificationTotal.setEnd();
         sendMsg(dataset.size(), status);
         workThreadRunning = false;
         if (isPreDestroyed() && !isDestroyed()) {

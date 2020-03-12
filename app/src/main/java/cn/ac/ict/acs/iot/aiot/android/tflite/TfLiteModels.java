@@ -120,7 +120,7 @@ public class TfLiteModels {
             super(desc, log);
             try {
                 timeRecord.loadModel.setStart();
-                classifier = Classifier.create(net_tflite_filepath, Classifier.Device.CPU, 1, labelsFilePath, desc, log);
+                classifier = Classifier.create(net_tflite_filepath, desc.getDevice(), 1, labelsFilePath, desc, log);
                 timeRecord.loadModel.setEnd();
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {
