@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.os.Environment;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
+import com.github.labowenzi.commonj.JEnumUtil;
 import com.github.labowenzi.commonj.JIoUtil;
 import com.github.labowenzi.commonj.JJsonUtils;
 import com.github.labowenzi.commonj.JUtil;
@@ -17,6 +19,7 @@ import cn.ac.ict.acs.iot.aiot.android.caffe2.Caffe2Models;
 import cn.ac.ict.acs.iot.aiot.android.pytorch.PyTorchModels;
 import cn.ac.ict.acs.iot.aiot.android.tflite.TfLiteModels;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
+import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
 /**
  * Created by alanubu on 20-1-20.
@@ -46,6 +49,52 @@ public class Model {
             FRAMEWORK_CAFFE2,
             FRAMEWORK_TFLITE,
     };
+    public static final Device[][] FRAMEWORKS_SUPPORTED_DEVICES = {
+            {Device.CPU},  // pytorch
+            {Device.CPU},  // caffe2
+            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite
+    };
+
+    public static Device[] getSupportedDevices(String framework) {
+        int index = JUtil.indexInArray(framework, FRAMEWORKS);
+        if (index < 0) {
+            return null;
+        }
+        return FRAMEWORKS_SUPPORTED_DEVICES[index];
+    }
+    @NonNull
+    public static Device getDefaultSupportedDevice(String framework) {
+        Device[] devices = getSupportedDevices(framework);
+        return JUtil.isEmpty(devices) ? Device.CPU : devices[0];
+    }
+
+    /** The runtime device type used for executing classification. */
+    public enum Device {
+        CPU,
+        NNAPI,
+        GPU,
+        ;
+
+        @Nullable
+        public static Device get(@Nullable String value) {
+            return JEnumUtil.getByLowerCase(value, values());
+        }
+        @Nullable
+        public static String getName(@Nullable Device value) {
+            return value == null ? null : value.name().toLowerCase();
+        }
+        @Nullable
+        public static String[] getNames(@Nullable Device[] values) {
+            if (values == null) {
+                return null;
+            }
+            String[] res = new String[values.length];
+            for (int i=0; i<values.length; ++i) {
+                res[i] = getName(values[i]);
+            }
+            return res;
+        }
+    }
 
     public static final String DIR_FILE = "aiot/models";
     public static final String DIR_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + DIR_FILE;
@@ -88,8 +137,8 @@ public class Model {
         return modelDir == null ? null : modelDir.getInfo(framework).defaultModelName;
     }
 
-    public AbstractModel getModel(Activity activity, LogUtil.Log log, String framework, String model) {
-        return modelDir.getInfo(framework).generator.genModel(activity, log, modelDir, model);
+    public AbstractModel getModel(Activity activity, LogUtil.Log log, String framework, String model, Device device) {
+        return modelDir.getInfo(framework).generator.genModel(activity, log, modelDir, model, device);
     }
 
     public static class ModelDir {
@@ -179,13 +228,17 @@ public class Model {
         }
 
         public interface IModelGenerator {
-            AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName);
+            AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device);
         }
         public static class PyTorchModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
                 ModelDesc.Pytorch modelD = ModelDesc.getModel(dir.getModelDesc().getPytorch(), modelName);
                 if (modelD == null) {
+                    return null;
+                }
+                if (!JUtil.inArray(device, getSupportedDevices(FRAMEWORK_PYTORCH))) {
+                    Util.showToast("device not support", activity);
                     return null;
                 }
                 return PyTorchModels.newModel(log, dir, modelD);
@@ -193,9 +246,13 @@ public class Model {
         }
         public static class Caffe2ModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
                 ModelDesc.Caffe2 modelD = ModelDesc.getModel(dir.getModelDesc().getCaffe2(), modelName);
                 if (modelD == null) {
+                    return null;
+                }
+                if (!JUtil.inArray(device, getSupportedDevices(FRAMEWORK_CAFFE2))) {
+                    Util.showToast("device not support", activity);
                     return null;
                 }
                 return Caffe2Models.newModel(log, dir, modelD);
@@ -203,12 +260,16 @@ public class Model {
         }
         public static class TfLiteModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
                 ModelDesc.Tflite modelD = ModelDesc.getModel(dir.getModelDesc().getTflite(), modelName);
                 if (modelD == null) {
                     return null;
                 }
-                return TfLiteModels.newModel(log, dir, modelD);
+                if (!JUtil.inArray(device, getSupportedDevices(FRAMEWORK_TFLITE))) {
+                    Util.showToast("device not support", activity);
+                    return null;
+                }
+                return TfLiteModels.newModel(log, dir, modelD, device);
             }
         }
     }

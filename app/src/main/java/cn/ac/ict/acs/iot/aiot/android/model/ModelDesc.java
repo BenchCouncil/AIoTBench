@@ -1,14 +1,11 @@
 package cn.ac.ict.acs.iot.aiot.android.model;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.github.labowenzi.commonj.JEnumUtil;
 import com.github.labowenzi.commonj.JUtil;
 
 import java.util.List;
-
-import cn.ac.ict.acs.iot.aiot.android.tflite.Classifier;
 
 /**
  * json model;
@@ -171,7 +168,6 @@ public class ModelDesc {
         private float[] norm_mean;
         private float[] norm_std_dev;
         private String labels;
-        private String device;
 
         public String getDir() {
             return dir;
@@ -201,11 +197,6 @@ public class ModelDesc {
         }
         public String getLabels_filepath(Model.ModelDir dir) {
             return dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + labels;
-        }
-
-        @NonNull
-        public Classifier.Device getDevice() {
-            return JEnumUtil.getByLowerCase(device, Classifier.Device.values(), Classifier.Device.CPU);
         }
     }
 }

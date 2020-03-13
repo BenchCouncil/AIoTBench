@@ -22,14 +22,14 @@ import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
  */
 public class TfLiteModels {
 
-    public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Tflite desc) {
+    public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Tflite desc, Model.Device device) {
         String filePath = desc.getNet_tflite_filepath(dir);
         String labelsFilePath = desc.getLabels_filepath(dir);
 
         if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) ) {
             return null;
         }
-        return new TfLiteModelFromFile(desc, log,  filePath, labelsFilePath);
+        return new TfLiteModelFromFile(desc, log,  filePath, labelsFilePath, device);
     }
 
     public abstract static class TfLiteModel extends AbstractModel {
@@ -116,11 +116,11 @@ public class TfLiteModels {
         }
     }
     public static class TfLiteModelFromFile extends TfLiteModel {
-        public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, String net_tflite_filepath, String labelsFilePath) {
+        public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, String net_tflite_filepath, String labelsFilePath, Model.Device device) {
             super(desc, log);
             try {
                 timeRecord.loadModel.setStart();
-                classifier = Classifier.create(net_tflite_filepath, desc.getDevice(), 1, labelsFilePath, desc, log);
+                classifier = Classifier.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
                 timeRecord.loadModel.setEnd();
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {

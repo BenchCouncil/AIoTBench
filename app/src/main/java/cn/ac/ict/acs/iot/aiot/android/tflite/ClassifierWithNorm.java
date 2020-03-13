@@ -20,6 +20,7 @@ import org.tensorflow.lite.support.common.ops.NormalizeOp;
 
 import java.io.IOException;
 
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
 /** This TensorFlow Lite classifier works with the quantized MobileNet model. */
@@ -37,7 +38,7 @@ public class ClassifierWithNorm extends Classifier {
   /**
    * Initializes a {@code ClassifierQuantizedMobileNet}.
    */
-  public ClassifierWithNorm(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, float[] mean, float[] std_dev, LogUtil.Log log)
+  public ClassifierWithNorm(String net_tflite_filepath, Model.Device device, int numThreads, String labelsFilePath, boolean needToBgr, float[] mean, float[] std_dev, LogUtil.Log log)
           throws IOException {
     super(net_tflite_filepath, device, numThreads, labelsFilePath, needToBgr, log);
     this.mean = mean;

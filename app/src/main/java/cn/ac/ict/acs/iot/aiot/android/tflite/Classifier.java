@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 
@@ -59,13 +60,6 @@ public abstract class Classifier {
   private static final String TAG = "tflite classifier";
 
   protected final LogUtil.Log log;
-
-  /** The runtime device type used for executing classification. */
-  public enum Device {
-    CPU,
-    NNAPI,
-    GPU
-  }
 
   /** The loaded TensorFlow Lite model. */
   private MappedByteBuffer tfliteModel;
@@ -98,7 +92,7 @@ public abstract class Classifier {
   /** Processer to apply post processing of the output probability. */
   private final TensorProcessor probabilityProcessor;
 
-  public static Classifier create(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, ModelDesc.Tflite modelDesc, LogUtil.Log log)
+  public static Classifier create(String net_tflite_filepath, Model.Device device, int numThreads, String labelsFilePath, ModelDesc.Tflite modelDesc, LogUtil.Log log)
           throws IOException {
     boolean needToBgr = modelDesc != null && modelDesc.needToBgr();
     //if (modelDesc != null) {
@@ -187,10 +181,10 @@ public abstract class Classifier {
   }
 
   /** Initializes a {@code Classifier}. */
-  protected Classifier(String net_tflite_filepath, Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log) throws IOException {
+  protected Classifier(String net_tflite_filepath, Model.Device device, int numThreads, String labelsFilePath, boolean needToBgr, LogUtil.Log log) throws IOException {
     this(null, net_tflite_filepath, labelsFilePath, device, numThreads, needToBgr, log);
   }
-  protected Classifier(Activity activity, String net_tflite_filepath, String labelsFilePath, Device device, int numThreads, boolean needToBgr, LogUtil.Log log) throws IOException {
+  protected Classifier(Activity activity, String net_tflite_filepath, String labelsFilePath, Model.Device device, int numThreads, boolean needToBgr, LogUtil.Log log) throws IOException {
     this.needToBgr = needToBgr;
     this.log = log;
     if (JUtil.isEmpty(net_tflite_filepath)) {

@@ -33,6 +33,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
     public static final String EXTRA_FRAMEWORK_NAME = "extra_framework_name";
     public static final String EXTRA_MODEL_NAME = "extra_model_name";
     public static final String EXTRA_DATASET_NAME = "extra_dataset_name";
+    public static final String EXTRA_DEVICE_NAME = "extra_device_name";
 
     public static final int TIME_RECORD_TOP_K = 3;
     public static final int SCORE_TOP_K = 5;
@@ -43,6 +44,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
     private String frameworkName;
     private String modelName;
     private String datasetName;
+    private String deviceName;
 
     private AbstractModel model = null;
     private StatisticsTime.TimeRecord timeRecord = null;
@@ -68,20 +70,24 @@ public class ImageClassifyActivity extends AppCompatActivity {
         frameworkName = intent.getStringExtra(EXTRA_FRAMEWORK_NAME);
         modelName = intent.getStringExtra(EXTRA_MODEL_NAME);
         datasetName = intent.getStringExtra(EXTRA_DATASET_NAME);
+        deviceName = intent.getStringExtra(EXTRA_DEVICE_NAME);
         if (JUtil.isEmpty(frameworkName)
                 || JUtil.isEmpty(modelName)
-                || JUtil.isEmpty(datasetName)) {
-            Util.showToast("wrong model or dataset", this);
+                || JUtil.isEmpty(datasetName)
+                || JUtil.isEmpty(deviceName)) {
+            Util.showToast("wrong model, dataset or device", this);
             finish();
             return;
         }
         String fmd = frameworkName
                 + '_' + modelName
-                + '_' + datasetName;
+                + '_' + datasetName
+                + '_' + deviceName;
         log = LogUtil.Log.inLogDir("ic_" + fmd + ".log");
         log.logln("framework=" + frameworkName);
         log.logln("model=" + modelName);
         log.logln("dataset=" + datasetName);
+        log.logln("device=" + deviceName);
         if (!loadModel()) {
             finish();
             return;
@@ -104,7 +110,12 @@ public class ImageClassifyActivity extends AppCompatActivity {
             Util.showToast(R.string.not_implemented, this);
             return false;
         }
-        model = modelI.getModel(this, log, frameworkName, modelName);
+        Model.Device device = Model.Device.get(deviceName);
+        if (device == null) {
+            Util.showToast("wrong device", this);
+            return false;
+        }
+        model = modelI.getModel(this, log, frameworkName, modelName, device);
         if (model == null || !model.isStatusOk()) {
             Util.showToast("load model err", this);
             return false;
@@ -150,6 +161,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
                 infoSb.append(",  classes[").append(dataset.getClassesInfo().getSize()).append("]")
                     .append(", files[").append(dataset.size()).append("]");
         }
+        infoSb.append("\ndevice: ").append(deviceName);
         mImageInfo.setText(infoSb.toString());
         mResult.setText(null);
         mTimeRecord.setText(null);
@@ -245,7 +257,10 @@ public class ImageClassifyActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         log.close();
-        model.destroy();
+        if (model != null) {
+            model.destroy();
+            model = null;
+        }
         super.onDestroy();
     }
 

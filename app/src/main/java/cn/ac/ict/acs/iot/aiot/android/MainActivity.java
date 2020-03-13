@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mFramework;
     private TextView mModel;
     private TextView mDataset;
+    private TextView mDevice;
 
     private Model modelI;
     private Dataset datasetI;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private String frameworkName;
     private String modelName;
     private String datasetName;
+    private String deviceName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,17 +63,20 @@ public class MainActivity extends AppCompatActivity {
         mFramework = findViewById(R.id.tv_framework);
         mModel = findViewById(R.id.tv_model);
         mDataset = findViewById(R.id.tv_dataset);
+        mDevice = findViewById(R.id.tv_device);
         findViewById(R.id.btn_dir_model).setOnClickListener(view -> onSelectDirModel());
         findViewById(R.id.btn_dir_dataset).setOnClickListener(view -> onSelectDirDataset());
         findViewById(R.id.btn_framework).setOnClickListener(view -> onSelectFramework());
         findViewById(R.id.btn_model).setOnClickListener(view -> onSelectModel());
         findViewById(R.id.btn_dataset).setOnClickListener(view -> onSelectDataset());
+        findViewById(R.id.btn_device).setOnClickListener(view -> onSelectDevice());
         findViewById(R.id.btn_go).setOnClickListener(view -> onGo());
         dirModel = null;
         dirDataset = null;
         frameworkName = null;
         modelName = null;
         datasetName = null;
+        deviceName = null;
         askPermission();
         initDirAndViews();
     }
@@ -93,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         frameworkName = Model.FRAMEWORK_DEFAULT;
         modelName = modelI.getDefaultModelName(frameworkName);
         datasetName = datasetI.getDefaultDatasetName();
+        deviceName = Model.Device.getName(Model.Device.CPU);
     }
     private void initDirAndViews() {
         initDir();
@@ -101,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         refreshFrameworkViews();
         refreshModelViews();
         refreshDatasetViews();
+        refreshDeviceViews();
     }
 
     private void askPermission() {
@@ -160,8 +167,10 @@ public class MainActivity extends AppCompatActivity {
         dirModel = modelI.getDirs()[index];
         modelI.setModelDir(dirModel);
         modelName = modelI.getDefaultModelName(frameworkName);
+        deviceName = Model.Device.getName(Model.getDefaultSupportedDevice(frameworkName));
         refreshDirModelViews();
         refreshModelViews();
+        refreshDeviceViews();
     }
     private void onSelectDirDataset() {
         String title = "dataset dirs";
@@ -191,8 +200,10 @@ public class MainActivity extends AppCompatActivity {
     private void onSelectFramework(int index) {
         frameworkName = Model.FRAMEWORKS[index];
         modelName = modelI.getDefaultModelName(frameworkName);
+        deviceName = Model.Device.getName(Model.getDefaultSupportedDevice(frameworkName));
         refreshFrameworkViews();
         refreshModelViews();
+        refreshDeviceViews();
     }
     private void onSelectModel() {
         if (JUtil.isEmpty(frameworkName) || modelI.getModelDir() == null) {
@@ -234,6 +245,26 @@ public class MainActivity extends AppCompatActivity {
         }
         refreshDatasetViews();
     }
+    private void onSelectDevice() {
+        if (JUtil.isEmpty(frameworkName) || JUtil.isEmpty(modelName)) {
+            Util.showToast("no framework or model", this);
+            return;
+        }
+        String title = "devices";
+        String[] items = Model.Device.getNames(Model.getSupportedDevices(frameworkName));
+        DialogInterface.OnClickListener itemsL = (dialog, which) -> {
+            onSelectDevice(which);
+            dialog.dismiss();
+        };
+        onSelect(title, items, itemsL);
+    }
+    private void onSelectDevice(int index) {
+        deviceName = Model.Device.getNames(Model.getSupportedDevices(frameworkName))[index];
+        if (JUtil.isEmpty(deviceName)) {
+            Util.showToast("wrong device", this);
+        }
+        refreshDeviceViews();
+    }
 
     private void refreshDirModelViews() {
         refreshTextViews(mDirModel, dirModel);
@@ -250,6 +281,9 @@ public class MainActivity extends AppCompatActivity {
     private void refreshDatasetViews() {
         refreshTextViews(mDataset, datasetName);
     }
+    private void refreshDeviceViews() {
+        refreshTextViews(mDevice, deviceName);
+    }
     private void refreshTextViews(TextView view, String text) {
         view.setText(text);
     }
@@ -261,6 +295,7 @@ public class MainActivity extends AppCompatActivity {
             bundle.putString(ImageClassifyActivity.EXTRA_FRAMEWORK_NAME, frameworkName);
             bundle.putString(ImageClassifyActivity.EXTRA_MODEL_NAME, modelName);
             bundle.putString(ImageClassifyActivity.EXTRA_DATASET_NAME, datasetName);
+            bundle.putString(ImageClassifyActivity.EXTRA_DEVICE_NAME, deviceName);
             intent.putExtras(bundle);
             startActivity(intent);
         } else {
