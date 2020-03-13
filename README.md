@@ -65,10 +65,12 @@ code from: [**Tensorflow lite android**](https://github.com/tensorflow/examples/
         {
           "name": "inception_v3",
           "dir": "inception_v3",
-          "init_net_pb": "inception_v3_init.pb",
-          "predict_net_pb": "inception_v3_predict.pb",
-          "norm_mean": [127.5,127.5,127.5],
-          "norm_std_dev": [1.0,1.0,1.0]
+          "init_net_pb": "init_net.pb",
+          "predict_net_pb": "predict_net.pb",
+          "norm_mean": [0,0,0],
+          "norm_std_dev": [255.0,255.0,255.0],
+          "labels": "synset2015.txt",
+          "bitmap_rgb_type": "bgr"
         }
       ],
       "pytorch": [
