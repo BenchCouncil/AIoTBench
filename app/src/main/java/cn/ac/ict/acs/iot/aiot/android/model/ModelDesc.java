@@ -115,6 +115,7 @@ public class ModelDesc {
         private String predict_net_pb;
         private float[] norm_mean;
         private float[] norm_std_dev;
+        private String labels;
 
         public String getDir() {
             return dir;
@@ -124,14 +125,14 @@ public class ModelDesc {
             return init_net_pb;
         }
         public String getInit_net_pb_filepath(Model.ModelDir dir) {
-            return dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + init_net_pb;
+            return JUtil.isEmpty(init_net_pb) ? null : dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + init_net_pb;
         }
 
         public String getPredict_net_pb() {
             return predict_net_pb;
         }
         public String getPredict_net_pb_filepath(Model.ModelDir dir) {
-            return dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + predict_net_pb;
+            return JUtil.isEmpty(predict_net_pb) ? null : dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + predict_net_pb;
         }
 
         public float[] getNorm_mean() {
@@ -140,6 +141,13 @@ public class ModelDesc {
 
         public float[] getNorm_std_dev() {
             return norm_std_dev;
+        }
+
+        public String getLabels() {
+            return labels;
+        }
+        public String getLabels_filepath(Model.ModelDir dir) {
+            return JUtil.isEmpty(labels) ? null : dir.getDirPath() + "/" + "caffe2" + "/" + this.dir + "/" + labels;
         }
     }
 
@@ -156,7 +164,7 @@ public class ModelDesc {
             return net_pt;
         }
         public String getNet_pt_filepath(Model.ModelDir dir) {
-            return dir.getDirPath() + "/" + "pytorch" + "/" + this.dir + "/" + net_pt;
+            return JUtil.isEmpty(net_pt) ? null : dir.getDirPath() + "/" + "pytorch" + "/" + this.dir + "/" + net_pt;
         }
     }
 
@@ -177,7 +185,7 @@ public class ModelDesc {
             return net_tflite;
         }
         public String getNet_tflite_filepath(Model.ModelDir dir) {
-            return dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + net_tflite;
+            return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + net_tflite;
         }
 
         public String getQuantization() {
@@ -196,7 +204,7 @@ public class ModelDesc {
             return labels;
         }
         public String getLabels_filepath(Model.ModelDir dir) {
-            return dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + labels;
+            return JUtil.isEmpty(labels) ? null : dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + labels;
         }
     }
 }

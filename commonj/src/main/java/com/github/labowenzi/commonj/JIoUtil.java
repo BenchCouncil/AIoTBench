@@ -7,6 +7,7 @@ import com.github.labowenzi.commonj.annotation.Nullable;
 import com.github.labowenzi.commonj.filetype.FileTypeUtil;
 import com.github.labowenzi.commonj.log.Log;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -352,6 +354,36 @@ public class JIoUtil {
             res = new String(buffer, StandardCharsets.UTF_8);//用new String可以运行在任意API Level
             return res;
         }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @NotNull
+    public static List<String> readLines(@NotNull String filePath) {
+        try {
+            InputStream inputStream = new FileInputStream(new File(filePath));
+            List<String> res = readLines(inputStream);
+            closeSilently(inputStream);
+            return res;
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "cannot open " + filePath, e);
+            return null;
+        }
+    }
+    @NotNull
+    public static List<String> readLines(@NotNull InputStream inputStream) {
+        try {
+            List<String> labels = new ArrayList<>();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                labels.add(line);
+            }
+            reader.close();
+            return labels;
+        } catch (IOException e) {
             e.printStackTrace();
             return null;
         }

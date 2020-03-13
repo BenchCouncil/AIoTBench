@@ -30,7 +30,7 @@ public abstract class AbstractModel implements IModel {
     public Handler handler;
     public int what;
 
-    public IDataset dataset;
+    protected IDataset dataset;
 
     public final LogUtil.Log log;
     public int scoreTopK = MathUtil.Statistics.DEFAULT_TOP_K;
@@ -49,6 +49,10 @@ public abstract class AbstractModel implements IModel {
         this.destroyed = false;
         this.preDestroyed = false;
         this.workThreadRunning = false;
+    }
+
+    public void setDataset(IDataset dataset) {
+        this.dataset = dataset;
     }
 
     @Override

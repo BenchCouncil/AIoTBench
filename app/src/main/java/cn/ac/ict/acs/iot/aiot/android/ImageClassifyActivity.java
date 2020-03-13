@@ -173,7 +173,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
             model.what = AbstractModel.HANDLER_DO_IMAGE_CLASSIFICATION;
             model.scoreTopK = SCORE_TOP_K;
             if (dataset != null) {
-                model.dataset = dataset;
+                model.setDataset(dataset);
             } else {
                 Util.showToast("no dataset", this);
                 return;
