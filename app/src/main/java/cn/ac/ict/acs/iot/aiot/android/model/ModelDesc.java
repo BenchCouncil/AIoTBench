@@ -65,6 +65,12 @@ public class ModelDesc {
          */
         private String bitmap_rgb_type;
 
+        /**
+         * dest bitmap's width and height;
+         * [width, height]
+         */
+        private int[] bitmap_convert_size;
+
         public String getName() {
             return name;
         }
@@ -84,6 +90,10 @@ public class ModelDesc {
         }
         public boolean needToBgr() {
             return getBitmapRgbType() == ModelDesc.BaseModelDesc.BitmapRgbType.BGR;
+        }
+
+        public int[] getBitmap_convert_size() {
+            return bitmap_convert_size;
         }
 
         public enum BitmapConvertMethod {

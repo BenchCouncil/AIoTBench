@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.github.labowenzi.commonj.JUtil;
+import com.github.labowenzi.commonj.log.Log;
 
 import java.io.IOException;
 import java.util.List;
@@ -16,6 +17,7 @@ import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
+import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
 /**
  * Created by alanubu on 19-12-30.
@@ -51,12 +53,30 @@ public class TfLiteModels {
 
         @Override
         public int getInputImageWidth() {
-            return classifier.getImageSizeX();
+            int wFromModel = classifier.getImageSizeX();
+            int wFromDesc = super.getInputImageWidth();
+            if (wFromModel != wFromDesc) {
+                Object[] msg = {
+                        "ic", "error", "width from model and desc are not equal", "width from model=" + wFromModel, "width from desc=" + wFromDesc
+                };
+                log.loglnA(msg);
+                Log.e("ic", Util.arrToString(msg, 1));
+            }
+            return wFromDesc;
         }
 
         @Override
         public int getInputImageHeight() {
-            return classifier.getImageSizeY();
+            int hFromModel = classifier.getImageSizeY();
+            int hFromDesc = super.getInputImageHeight();
+            if (hFromModel != hFromDesc) {
+                Object[] msg = {
+                        "ic", "error", "height from model and desc are not equal", "height from model=" + hFromModel, "height from desc=" + hFromDesc
+                };
+                log.loglnA(msg);
+                Log.e("ic", Util.arrToString(msg, 1));
+            }
+            return hFromDesc;
         }
 
         @Override
@@ -112,7 +132,10 @@ public class TfLiteModels {
         @Override
         protected void doDestroy() {
             super.doDestroy();
-            classifier.close();
+            if (classifier != null) {
+                classifier.close();
+            }
+            System.gc();
         }
     }
     public static class TfLiteModelFromFile extends TfLiteModel {

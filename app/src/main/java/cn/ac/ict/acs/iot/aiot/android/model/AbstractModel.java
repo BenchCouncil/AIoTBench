@@ -8,6 +8,7 @@ import android.os.Message;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
+import com.github.labowenzi.commonj.JJsonUtils;
 import com.github.labowenzi.commonj.ThreadPoolUtil;
 import com.github.labowenzi.commonj.log.Log;
 
@@ -22,6 +23,9 @@ import cn.ac.ict.acs.iot.aiot.android.util.MathUtil;
  * Created by alanubu on 20-1-20.
  */
 public abstract class AbstractModel implements IModel {
+
+    public static final int INPUT_TENSOR_WIDTH = 224;
+    public static final int INPUT_TENSOR_HEIGHT = 224;
 
     public static final int HANDLER_DO_IMAGE_CLASSIFICATION = 59250;
 
@@ -49,6 +53,23 @@ public abstract class AbstractModel implements IModel {
         this.destroyed = false;
         this.preDestroyed = false;
         this.workThreadRunning = false;
+    }
+
+    protected int[] getBitmapConvertSizeFromDesc() {
+        if (modelDesc == null || modelDesc.getBitmap_convert_size() == null || modelDesc.getBitmap_convert_size().length < 2) {
+            return null;
+        }
+        return modelDesc.getBitmap_convert_size();
+    }
+    @Override
+    public int getInputImageWidth() {
+        int[] imgSize = getBitmapConvertSizeFromDesc();
+        return imgSize == null ? INPUT_TENSOR_WIDTH : imgSize[0];
+    }
+    @Override
+    public int getInputImageHeight() {
+        int[] imgSize = getBitmapConvertSizeFromDesc();
+        return imgSize == null ? INPUT_TENSOR_HEIGHT : imgSize[1];
     }
 
     public void setDataset(IDataset dataset) {
@@ -106,7 +127,8 @@ public abstract class AbstractModel implements IModel {
         log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
 
         try {
-            log.loglnA("ic", "index", imageIndex, "bitmap", status.bitmapCroped, "ic", "start", StatisticsTime.TimeRecord.time());
+            int[] imageSize = new int[] {status.bitmapCroped.getWidth(), status.bitmapCroped.getHeight()};
+            log.loglnA("ic", "index", imageIndex, "bitmap.size", JJsonUtils.toJson(imageSize), "ic", "start", StatisticsTime.TimeRecord.time());
             StatisticsScore statistics = doImageClassificationContinue(status.bitmapCroped, target);
 
             log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);

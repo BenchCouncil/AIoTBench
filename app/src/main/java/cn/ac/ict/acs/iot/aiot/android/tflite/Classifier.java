@@ -22,6 +22,7 @@ import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
 
+import com.github.labowenzi.commonj.JIoUtil;
 import com.github.labowenzi.commonj.JJsonUtils;
 import com.github.labowenzi.commonj.JUtil;
 import com.github.labowenzi.commonj.log.Log;
@@ -43,6 +44,7 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -257,10 +259,16 @@ public abstract class Classifier {
 
   /** Reads label list from Assets. */
   private List<String> loadLabelList(Activity activity) throws IOException {
-    return FileUtil.loadLabels(activity.getAssets().open(getLabelPath()));
+    InputStream in = activity.getAssets().open(getLabelPath());
+    List<String> ret = FileUtil.loadLabels(in);
+    JIoUtil.closeSilently(in);
+    return ret;
   }
   private List<String> loadLabelList(String labelsFilePath) throws IOException {
-    return FileUtil.loadLabels(new FileInputStream(new File(labelsFilePath)));
+    InputStream in = new FileInputStream(new File(labelsFilePath));
+    List<String> ret = FileUtil.loadLabels(in);
+    JIoUtil.closeSilently(in);
+    return ret;
   }
 
   /** Memory-map the model file in Assets. */
@@ -273,7 +281,10 @@ public abstract class Classifier {
     FileChannel fileChannel = inputStream.getChannel();
     long startOffset = 0;
     long declaredLength = file.length();
-    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    MappedByteBuffer ret = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    fileChannel.close();
+    inputStream.close();
+    return ret;
   }
 
   /** Runs inference and returns the classification results. */

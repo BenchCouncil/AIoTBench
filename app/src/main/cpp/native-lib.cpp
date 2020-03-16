@@ -17,10 +17,7 @@
 #include <ATen/ATen.h>
 #include "classes.h"
 
-#define IMG_H 224
-#define IMG_W 224
 #define IMG_C 3
-#define MAX_DATA_SIZE IMG_H * IMG_W * IMG_C
 #define aloge(...) __android_log_print(ANDROID_LOG_ERROR, "AIoTCaffe2", __VA_ARGS__);
 #define alogd(...) __android_log_print(ANDROID_LOG_DEBUG, "AIoTCaffe2", __VA_ARGS__);
 
@@ -30,7 +27,8 @@ public:
             caffe2::Predictor *predictor,
             bool needToBgr,
             float norm_mean[], int norm_mean_cnt,
-            float norm_std_dev[], int norm_std_dev_cnt) {
+            float norm_std_dev[], int norm_std_dev_cnt,
+            int imgW, int imgH) {
         this->predictor = predictor;
         this->needToBgr = needToBgr;
         this->norm_mean_cnt = norm_mean_cnt;
@@ -51,6 +49,9 @@ public:
                 this->norm_std_dev[i] = norm_std_dev[i];
             }
         }
+        this->imgW = imgW;
+        this->imgH = imgH;
+        this->maxDataSize = this->imgW * this->imgH * IMG_C;
     }
 
     virtual ~PredictorWrapper() {
@@ -67,6 +68,10 @@ public:
     int norm_mean_cnt;
     float *norm_std_dev;
     int norm_std_dev_cnt;
+
+    int imgW;
+    int imgH;
+    int maxDataSize;
 };
 
 extern "C"
@@ -91,7 +96,10 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_loadNetByFile(
     buffer.resize(size);
     file.read(buffer.data(), size);
 
-    if (!net->ParseFromArray(buffer.data(), buffer.size())) {
+    const void* data = buffer.data();
+    int bufferSize = buffer.size();
+    alogd("size, file=%d, buffer=%d", size, bufferSize);
+    if (!net->ParseFromArray(data, bufferSize)) {  // crash when load a big net file(like vgg) by protobuf;
         aloge("Couldn't parse net from data.\n");
     }
     file.close();
@@ -138,7 +146,8 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_initCaffe2(
         jlong pInitNet, jlong pPredictNet,
         jboolean needToBgr,
         jfloatArray normMean, jint normMeanCnt,
-        jfloatArray normStdDev, jint normStdDevCnt) {
+        jfloatArray normStdDev, jint normStdDevCnt,
+        jint inputImageWidth, jint inputImageHeight) {
     alogd("new predictor.");
     caffe2::NetDef *initNet = (caffe2::NetDef *)(pInitNet);
     caffe2::NetDef *predictNet = (caffe2::NetDef *)(pPredictNet);
@@ -169,8 +178,10 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_initCaffe2(
             norm_std_dev[i] = std_dev_data[i];
         }
     }
+    int imgW = inputImageWidth;
+    int imgH = inputImageHeight;
 
-    PredictorWrapper *wrapper = new PredictorWrapper(predictor, toBgr, norm_mean, norm_mean_cnt, norm_std_dev, norm_std_dev_cnt);
+    PredictorWrapper *wrapper = new PredictorWrapper(predictor, toBgr, norm_mean, norm_mean_cnt, norm_std_dev, norm_std_dev_cnt, imgW, imgH);
     alogd("new predictor done.");
     if (norm_mean != NULL) {
         delete norm_mean;
@@ -202,21 +213,23 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
         env->SetIntArrayRegion(resultCnt, 0, 1, &resultCntI);
         return;
     }
-    float input_data[MAX_DATA_SIZE];
+    float *input_data = new float[wrapper->maxDataSize];
     jsize r_len = env->GetArrayLength(R);
     jbyte *r_data = env->GetByteArrayElements(R, 0);
-    assert(r_len <= MAX_DATA_SIZE);
+    assert(r_len <= wrapper->maxDataSize);
     jsize g_len = env->GetArrayLength(G);
     jbyte *g_data = env->GetByteArrayElements(G, 0);
-    assert(g_len <= MAX_DATA_SIZE);
+    assert(g_len <= wrapper->maxDataSize);
     jsize b_len = env->GetArrayLength(B);
     jbyte *b_data = env->GetByteArrayElements(B, 0);
-    assert(b_len <= MAX_DATA_SIZE);
-    for (auto i = 0; i < IMG_H; ++i) {
-        jbyte *r_row = &r_data[i * IMG_W];
-        jbyte *g_row = &g_data[i * IMG_W];
-        jbyte *b_row = &b_data[i * IMG_W];
-        for (auto j = 0; j < IMG_W; ++j) {
+    assert(b_len <= wrapper->maxDataSize);
+    int oneChannel = wrapper->imgH * wrapper->imgW;
+    int oneRow = wrapper->imgW;
+    for (auto i = 0; i < wrapper->imgH; ++i) {
+        jbyte *r_row = &r_data[i * wrapper->imgW];
+        jbyte *g_row = &g_data[i * wrapper->imgW];
+        jbyte *b_row = &b_data[i * wrapper->imgW];
+        for (auto j = 0; j < wrapper->imgW; ++j) {
             // Tested on Pixel and S7.
             char r = r_row[j];
             char g = g_row[j];
@@ -228,13 +241,13 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
             bool toBgr = wrapper->needToBgr;
             if (toBgr) {
             //if (1) {
-                b_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
-                g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
-                r_i = 2 * IMG_H * IMG_W + j * IMG_W + i;
+                b_i = 0 * oneChannel + j * oneRow + i;
+                g_i = 1 * oneChannel + j * oneRow + i;
+                r_i = 2 * oneChannel + j * oneRow + i;
             } else {
-                r_i = 0 * IMG_H * IMG_W + j * IMG_W + i;
-                g_i = 1 * IMG_H * IMG_W + j * IMG_W + i;
-                b_i = 2 * IMG_H * IMG_W + j * IMG_W + i;
+                r_i = 0 * oneChannel + j * oneRow + i;
+                g_i = 1 * oneChannel + j * oneRow + i;
+                b_i = 2 * oneChannel + j * oneRow + i;
             }
 
             if (wrapper->norm_mean_cnt > 0
@@ -263,8 +276,8 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
 
         }
     }
-    caffe2::TensorCPU input = caffe2::Tensor(std::vector<int>({1, IMG_C, IMG_H, IMG_W}), caffe2::CPU);
-    memcpy(input.mutable_data<float>(), input_data, IMG_H * IMG_W * IMG_C * sizeof(float));
+    caffe2::TensorCPU input = caffe2::Tensor(std::vector<int>({1, IMG_C, wrapper->imgH, wrapper->imgW}), caffe2::CPU);
+    memcpy(input.mutable_data<float>(), input_data, oneChannel * IMG_C * sizeof(float));
     std::vector<caffe2::TensorCPU> input_vec({input});
     std::vector<caffe2::TensorCPU> output_vec(1);
     (*predictor)(input_vec, &output_vec);
@@ -275,6 +288,7 @@ Java_cn_ac_ict_acs_iot_aiot_android_caffe2_PredictorWrapper_classificationFromCa
     }
     int resultCntI = (int) (output.size());
     env->SetIntArrayRegion(resultCnt, 0, 1, &resultCntI);
+    delete input_data;
 }
 
 extern "C"

@@ -92,16 +92,7 @@ public class Caffe2Models {
             if (predictor != null) {
                 predictor.destroy();
             }
-        }
-
-        @Override
-        public int getInputImageWidth() {
-            return 224;
-        }
-
-        @Override
-        public int getInputImageHeight() {
-            return 224;
+            System.gc();
         }
 
         @Override
@@ -149,7 +140,7 @@ public class Caffe2Models {
         public Caffe2ModelFromFile(ModelDesc.Caffe2 desc, LogUtil.Log log, String initNetFilePath, String predictNetFilePath, String labelsFilePath) {
             super(desc, log, labelsFilePath);
             timeRecord.loadModel.setStart();
-            predictor = new PredictorWrapper(initNetFilePath, predictNetFilePath, desc, log);
+            predictor = new PredictorWrapper(initNetFilePath, predictNetFilePath, getInputImageWidth(), getInputImageHeight(), desc, log);
             timeRecord.loadModel.setEnd();
             log.logln("load model: " + timeRecord.loadModel);
         }

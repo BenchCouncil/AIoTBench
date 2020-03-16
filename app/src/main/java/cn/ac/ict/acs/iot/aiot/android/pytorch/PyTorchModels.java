@@ -29,9 +29,6 @@ public class PyTorchModels {
 
     public abstract static class PyTorchModel extends AbstractModel {
 
-        public static final int INPUT_TENSOR_WIDTH = 224;
-        public static final int INPUT_TENSOR_HEIGHT = 224;
-
         @Nullable
         protected final ModelDesc.Pytorch modelDesc;
 
@@ -53,15 +50,7 @@ public class PyTorchModels {
             if (module != null) {
                 module.destroy();
             }
-        }
-
-        @Override
-        public int getInputImageWidth() {
-            return INPUT_TENSOR_WIDTH;
-        }
-        @Override
-        public int getInputImageHeight() {
-            return INPUT_TENSOR_HEIGHT;
+            System.gc();
         }
 
         @Override

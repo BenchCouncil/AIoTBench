@@ -26,19 +26,21 @@ public class PredictorWrapper {
     protected final boolean needToBgr;
     protected final float[] normMean;
     protected final float[] normStdDev;
+    protected final int inputImageWidth;
+    protected final int inputImageHeight;
 
     // todo: load net from file instead of asset;
     // test in other project;
     // https://github.com/facebookarchive/caffe2/issues/567#issuecomment-301969664
     protected native long loadNetByFile(String filePath);
     protected native long loadNet(AssetManager mgr, String fileName);
-    protected native long initCaffe2(long pInitNet, long pPredictNet, boolean needToBgr, float[] normMean, int normMeanCnt, float[] normStdDev, int normStdDevCnt);
+    protected native long initCaffe2(long pInitNet, long pPredictNet, boolean needToBgr, float[] normMean, int normMeanCnt, float[] normStdDev, int normStdDevCnt, int inputImageWidth, int inputImageHeight);
 
     protected native void classificationFromCaffe2(long pWrapper, byte[] R, byte[] G, byte[] B, float[] result, int[] resultCnt);
 
     protected native void deletePtr(long ptr);
 
-    public PredictorWrapper(String initNetFilePath, String predictNetFilePath, ModelDesc.Caffe2 desc, LogUtil.Log log) {
+    public PredictorWrapper(String initNetFilePath, String predictNetFilePath, int inputImageWidth, int inputImageHeight, ModelDesc.Caffe2 desc, LogUtil.Log log) {
         this.log = log;
         //this.needToBgr = (desc != null) && (desc.needToBgr());
         this.needToBgr = desc.needToBgr();
@@ -46,9 +48,11 @@ public class PredictorWrapper {
         int normMeanCnt = this.normMean == null ? -1 : this.normMean.length;
         this.normStdDev = desc == null ? null : desc.getNorm_std_dev();
         int normStdDevCnt = this.normStdDev == null ? -1 : this.normStdDev.length;
+        this.inputImageWidth = inputImageWidth;
+        this.inputImageHeight = inputImageHeight;
         this.pInitNet = loadNetByFile(initNetFilePath);
         this.pPredictNet = loadNetByFile(predictNetFilePath);
-        this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, normMean, normMeanCnt, normStdDev, normStdDevCnt);
+        this.pWrapper = initCaffe2(pInitNet, pPredictNet, needToBgr, normMean, normMeanCnt, normStdDev, normStdDevCnt, inputImageWidth, inputImageHeight);
     }
 
     public boolean isStatusOk() {
