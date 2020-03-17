@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -150,6 +151,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
         mResult = findViewById(R.id.tv_result);
         mTimeRecord = findViewById(R.id.tv_time_record);
         mImages = findViewById(R.id.ll_images);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     private void setViewsByData() {
