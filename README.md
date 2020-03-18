@@ -24,8 +24,8 @@ ImageNet
 
 ## compile env
 
-android studio: 3.5.3(most recent);  
-ndk: r20b(most recent);  
+android studio: 3.6.1(most recent);  
+ndk: r21(most recent);  
 
 ## PyTorch
 
