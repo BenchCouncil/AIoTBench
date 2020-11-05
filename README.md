@@ -1,7 +1,11 @@
-# AIoT Bench on Android
+# AIoTBench on Android
 
 AIoT benchmark program on Android;  
 For different frameworks, models and data sets;  
+
+## install
+
+To install the app on an Android device and run, see [**install.md**](./install.md)  
 
 ## Framework
 
