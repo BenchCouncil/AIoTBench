@@ -10,8 +10,8 @@ import org.pytorch.Module;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
-import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
-import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;

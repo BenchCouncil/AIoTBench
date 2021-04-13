@@ -29,9 +29,6 @@ public class PredictorWrapper {
     protected final int inputImageWidth;
     protected final int inputImageHeight;
 
-    // todo: load net from file instead of asset;
-    // test in other project;
-    // https://github.com/facebookarchive/caffe2/issues/567#issuecomment-301969664
     protected native long loadNetByFile(String filePath);
     protected native long loadNet(AssetManager mgr, String fileName);
     protected native long initCaffe2(long pInitNet, long pPredictNet, boolean needToBgr, float[] normMean, int normMeanCnt, float[] normStdDev, int normStdDevCnt, int inputImageWidth, int inputImageHeight);

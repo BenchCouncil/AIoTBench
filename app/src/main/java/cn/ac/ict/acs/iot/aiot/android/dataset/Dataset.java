@@ -23,9 +23,13 @@ public class Dataset {
     @NonNull
     public static Dataset getInstance(Context context) {
         if (instance == null) {
-            instance = new Dataset(context);
+            instance = getInstance(context, DIR_PATH);
         }
         return instance;
+    }
+    @NonNull
+    public static Dataset getInstance(Context context, String dirPath) {
+        return new Dataset(context, dirPath);
     }
     public static Dataset resetInstance(Context context) {
         instance = null;
@@ -37,12 +41,15 @@ public class Dataset {
 
     private DemoImage demoImage;
 
+    private final String dirPath;
+
     private String[] dirs;
     private DatasetDir datasetDir;
 
-    public Dataset(Context context) {
+    public Dataset(Context context, String dirPath) {
+        this.dirPath = dirPath;
         demoImage = new DemoImage(context);
-        File datasetDir = new File(DIR_PATH);
+        File datasetDir = new File(dirPath);
         if (datasetDir.exists() && datasetDir.isDirectory()) {
             dirs = datasetDir.list();
         } else {
@@ -65,12 +72,11 @@ public class Dataset {
 
     public void setDatasetDir(String dir) {
         if (JUtil.isEmpty(dir) || JUtil.isEmpty(dirs)) {
-            return;
-        } else {
             Log.e(TAG, "no dir or dirs");
+            return;
         }
         if (JUtil.inArray(dir, dirs)) {
-            String dirPath = DIR_PATH + "/" + dir;
+            String dirPath = this.dirPath + "/" + dir;
             this.datasetDir = new DatasetDir(dirPath);
         } else {
             Log.e(TAG, "no dir in dirs");

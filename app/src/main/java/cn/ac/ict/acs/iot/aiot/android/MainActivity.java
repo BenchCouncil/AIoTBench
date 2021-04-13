@@ -1,6 +1,7 @@
 package cn.ac.ict.acs.iot.aiot.android;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -18,6 +19,11 @@ import com.github.labowenzi.commonj.JIoUtil;
 import com.github.labowenzi.commonj.JUtil;
 import com.github.labowenzi.commonj.log.Log;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
 import cn.ac.ict.acs.iot.aiot.android.dataset.Dataset;
 import cn.ac.ict.acs.iot.aiot.android.log.ALog;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
@@ -33,9 +39,11 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
     };
 
+    private TextView mResource;
     private TextView mDirModel;
     private TextView mDirDataset;
     private TextView mFramework;
+    private TextView mQuant;
     private TextView mModel;
     private TextView mDataset;
     private TextView mDevice;
@@ -43,9 +51,11 @@ public class MainActivity extends AppCompatActivity {
     private Model modelI;
     private Dataset datasetI;
 
+    private String resourceName;
     private String dirModel;
     private String dirDataset;
     private String frameworkName;
+    private String quantName;
     private String modelName;
     private String datasetName;
     private String deviceName;
@@ -55,18 +65,23 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mkdirs();
         Log.setInstance(new ALog());
-        modelI = Model.getInstance();
-        datasetI = Dataset.getInstance(this);
+        resourceName = ImageClassifyActivity.RESOURCE_NAME_DEFAULT;
+        modelI = getAiotModel(resourceName);
+        datasetI = getAiotDataset(this, resourceName);
         setContentView(R.layout.activity_main);
+        mResource = findViewById(R.id.tv_resource);
         mDirModel = findViewById(R.id.tv_dir_model);
         mDirDataset = findViewById(R.id.tv_dir_dataset);
         mFramework = findViewById(R.id.tv_framework);
+        mQuant = findViewById(R.id.tv_quant);
         mModel = findViewById(R.id.tv_model);
         mDataset = findViewById(R.id.tv_dataset);
         mDevice = findViewById(R.id.tv_device);
+        findViewById(R.id.btn_resource).setOnClickListener(view -> onSelectResource());
         findViewById(R.id.btn_dir_model).setOnClickListener(view -> onSelectDirModel());
         findViewById(R.id.btn_dir_dataset).setOnClickListener(view -> onSelectDirDataset());
         findViewById(R.id.btn_framework).setOnClickListener(view -> onSelectFramework());
+        findViewById(R.id.btn_quant).setOnClickListener(View -> onSelectQuant());
         findViewById(R.id.btn_model).setOnClickListener(view -> onSelectModel());
         findViewById(R.id.btn_dataset).setOnClickListener(view -> onSelectDataset());
         findViewById(R.id.btn_device).setOnClickListener(view -> onSelectDevice());
@@ -74,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         dirModel = null;
         dirDataset = null;
         frameworkName = null;
+        quantName = null;
         modelName = null;
         datasetName = null;
         deviceName = null;
@@ -96,12 +112,14 @@ public class MainActivity extends AppCompatActivity {
             datasetI.setDatasetDir(dirDataset);
         }
         frameworkName = Model.FRAMEWORK_DEFAULT;
+        quantName = "no";
         modelName = modelI.getDefaultModelName(frameworkName);
         datasetName = datasetI.getDefaultDatasetName();
         deviceName = Model.Device.getName(Model.Device.CPU);
     }
     private void initDirAndViews() {
         initDir();
+        refreshResourceViews();
         refreshDirModelViews();
         refreshDirDatasetViews();
         refreshFrameworkViews();
@@ -149,10 +167,62 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public static String[] getAiotResources() {
+        List<String> l = new LinkedList<>();
+        l.add(ImageClassifyActivity.RESOURCE_NAME_DEFAULT);
+        File downloadDir = new File(DownloadInfo.DIR_PATH);
+        if (JIoUtil.canRead(downloadDir) && downloadDir.isDirectory()) {
+            File[] resources = downloadDir.listFiles();
+            if (!JUtil.isEmpty(resources)) {
+                for (File resource : resources) {
+                    if (JIoUtil.canRead(resource) && resource.isDirectory()) {
+                        l.add(resource.getName());
+                    }
+                }
+            }
+        }
+        String[] arr = new String[l.size()];
+        arr = l.toArray(arr);
+        return arr;
+    }
+    public static Dataset getAiotDataset(Context ctx, String resourceName) {
+        if (JUtil.isEmpty(resourceName)) {
+            return null;
+        } else if (resourceName.equals(ImageClassifyActivity.RESOURCE_NAME_DEFAULT)) {
+            return Dataset.getInstance(ctx);
+        } else {
+            return Dataset.getInstance(ctx, DownloadInfo.getDirPathDataset(resourceName));
+        }
+    }
+    public static Model getAiotModel(String resourceName) {
+        if (JUtil.isEmpty(resourceName)) {
+            return null;
+        } else if (resourceName.equals(ImageClassifyActivity.RESOURCE_NAME_DEFAULT)) {
+            return Model.getInstance();
+        } else {
+            return Model.getInstance(DownloadInfo.getDirPathModels(resourceName));
+        }
+    }
+
     private void onSelect(String title, String[] items, DialogInterface.OnClickListener itemsL) {
         String negStr = "cancel";
         DialogInterface.OnClickListener negL = (dialog, which) -> dialog.dismiss();
         DialogUtil.dlgList(this, title, null, items, itemsL, null, null, negStr, negL).show();
+    }
+    private void onSelectResource() {
+        String title = "resource";
+        String[] items = getAiotResources();
+        DialogInterface.OnClickListener itemsL = (dialog, which) -> {
+            onSelectResource(which);
+            dialog.dismiss();
+        };
+        onSelect(title, items, itemsL);
+    }
+    private void onSelectResource(int index) {
+        resourceName = getAiotResources()[index];
+        modelI = getAiotModel(resourceName);
+        datasetI = getAiotDataset(this, resourceName);
+        initDirAndViews();
     }
     private void onSelectDirModel() {
         String title = "model dirs";
@@ -202,9 +272,29 @@ public class MainActivity extends AppCompatActivity {
         modelName = modelI.getDefaultModelName(frameworkName);
         deviceName = Model.Device.getName(Model.getDefaultSupportedDevice(frameworkName));
         refreshFrameworkViews();
+        refreshQuantViews();
         refreshModelViews();
         refreshDeviceViews();
     }
+
+    private void onSelectQuant() {
+        String title = "Quant";
+        String[] items = Model.getSupportedQuant(frameworkName);
+        DialogInterface.OnClickListener itemsL = (dialog, which) -> {
+            onSelectQuant(which);
+            dialog.dismiss();
+        };
+        onSelect(title, items, itemsL);
+    }
+
+    private void onSelectQuant(int index) {
+        quantName = Model.getSupportedQuant(frameworkName)[index];
+        modelName = modelI.getDefaultModelName(frameworkName);
+        refreshQuantViews();
+        refreshModelViews();
+        refreshDeviceViews();
+    }
+
     private void onSelectModel() {
         if (JUtil.isEmpty(frameworkName) || modelI.getModelDir() == null) {
             Util.showToast("no framework", this);
@@ -266,6 +356,9 @@ public class MainActivity extends AppCompatActivity {
         refreshDeviceViews();
     }
 
+    private void refreshResourceViews() {
+        refreshTextViews(mResource, resourceName);
+    }
     private void refreshDirModelViews() {
         refreshTextViews(mDirModel, dirModel);
     }
@@ -275,6 +368,11 @@ public class MainActivity extends AppCompatActivity {
     private void refreshFrameworkViews() {
         refreshTextViews(mFramework, frameworkName);
     }
+
+    private void refreshQuantViews() {
+        refreshTextViews(mQuant, quantName);
+    }
+
     private void refreshModelViews() {
         refreshTextViews(mModel, modelName);
     }
@@ -292,7 +390,11 @@ public class MainActivity extends AppCompatActivity {
         if (!JUtil.isEmpty(frameworkName)) {
             Intent intent = new Intent(MainActivity.this, ImageClassifyActivity.class);
             Bundle bundle = new Bundle();
+            bundle.putString(ImageClassifyActivity.EXTRA_RESOURCE_NAME, resourceName);
+            bundle.putString(ImageClassifyActivity.EXTRA_DIR_MODEL, dirModel);
+            bundle.putString(ImageClassifyActivity.EXTRA_DIR_DATASET, dirDataset);
             bundle.putString(ImageClassifyActivity.EXTRA_FRAMEWORK_NAME, frameworkName);
+            bundle.putString(ImageClassifyActivity.EXTRA_QUANT_NAME, quantName);
             bundle.putString(ImageClassifyActivity.EXTRA_MODEL_NAME, modelName);
             bundle.putString(ImageClassifyActivity.EXTRA_DATASET_NAME, datasetName);
             bundle.putString(ImageClassifyActivity.EXTRA_DEVICE_NAME, deviceName);

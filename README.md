@@ -1,6 +1,6 @@
 # AIoTBench on Android
 
-AIoT benchmark program on Android;  
+AIoTbenchmark program on Android;
 For different frameworks, models and data sets;  
 
 ## install

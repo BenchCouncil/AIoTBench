@@ -44,6 +44,7 @@ public class LogUtil {
         }
         public void logln(String str) {
             log(str + '\n');
+            flush();
         }
         public void logA(Object ... objs) {
             log(Util.arrToString(objs, 0));
@@ -52,6 +53,16 @@ public class LogUtil {
             if (out != null) {
                 try {
                     out.write(str.getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void flush() {
+            if (out != null) {
+                try {
+                    out.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

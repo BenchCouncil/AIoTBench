@@ -2,6 +2,7 @@ package cn.ac.ict.acs.iot.aiot.android.model;
 
 import android.app.Activity;
 import android.os.Environment;
+import android.view.Display;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,9 +32,13 @@ public class Model {
     @NonNull
     public static Model getInstance() {
         if (instance == null) {
-            instance = new Model();
+            instance = getInstance(DIR_PATH);
         }
         return instance;
+    }
+    @NonNull
+    public static Model getInstance(String dirPath) {
+        return new Model(dirPath);
     }
     public static Model resetInstance() {
         instance = null;
@@ -43,17 +48,41 @@ public class Model {
     public static final String FRAMEWORK_PYTORCH = "pytorch";
     public static final String FRAMEWORK_TFLITE = "tflite";
     public static final String FRAMEWORK_DEFAULT = FRAMEWORK_PYTORCH;
+    public static final String Quant_f16 = "f16";
+    public static final String Quant_int = "full_int";
+    public static final String Quant_DR = "DR";
+    public static final String Quant_DEFAULT = Quant_DR;
 
     public static final String[] FRAMEWORKS = {
+            FRAMEWORK_TFLITE,
             FRAMEWORK_PYTORCH,
             FRAMEWORK_CAFFE2,
-            FRAMEWORK_TFLITE,
     };
     public static final Device[][] FRAMEWORKS_SUPPORTED_DEVICES = {
+            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite  // todo: can gpu run or not;
+//            {Device.CPU, Device.NNAPI},  // tflite
             {Device.CPU},  // pytorch
-            {Device.CPU},  // caffe2
-            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite
+            {Device.CPU}   // caffe2
     };
+    public static final String[][] FRAMEWORKS_SUPPORTED_Quants = {
+            {"no", Quant_DR, Quant_int, Quant_f16},  // tflite
+            {"no"},  // pytorch
+            {"no"},  // caffe2
+    };
+    public static final String[] Quants = {
+            "no",
+            Quant_f16,
+            Quant_int,
+            Quant_DR
+    };
+
+    public static String[] getSupportedQuant(String framework) {
+        int index = JUtil.indexInArray(framework, FRAMEWORKS);
+        if (index < 0) {
+            return null;
+        }
+        return FRAMEWORKS_SUPPORTED_Quants[index];
+    }
 
     public static Device[] getSupportedDevices(String framework) {
         int index = JUtil.indexInArray(framework, FRAMEWORKS);
@@ -99,11 +128,14 @@ public class Model {
     public static final String DIR_FILE = "aiot/models";
     public static final String DIR_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + DIR_FILE;
 
+    private final String dirPath;
+
     private String[] dirs;
     private ModelDir modelDir;
 
-    public Model() {
-        File modelDir = new File(DIR_PATH);
+    public Model(String dirPath) {
+        this.dirPath = dirPath;
+        File modelDir = new File(dirPath);
         if (modelDir.exists() && modelDir.isDirectory()) {
             dirs = modelDir.list();
         } else {
@@ -126,7 +158,7 @@ public class Model {
             return;
         }
         if (JUtil.inArray(dir, dirs)) {
-            String dirPath = DIR_PATH + "/" + dir;
+            String dirPath = this.dirPath + "/" + dir;
             this.modelDir = new ModelDir(dirPath);
         } else {
             Log.e(TAG, "no dir in dirs");
@@ -137,8 +169,8 @@ public class Model {
         return modelDir == null ? null : modelDir.getInfo(framework).defaultModelName;
     }
 
-    public AbstractModel getModel(Activity activity, LogUtil.Log log, String framework, String model, Device device) {
-        return modelDir.getInfo(framework).generator.genModel(activity, log, modelDir, model, device);
+    public AbstractModel getModel(Activity activity, LogUtil.Log log, String framework, String quantName, String model, Device device) {
+        return modelDir.getInfo(framework).generator.genModel(activity, log, modelDir, quantName, model, device);
     }
 
     public static class ModelDir {
@@ -228,11 +260,11 @@ public class Model {
         }
 
         public interface IModelGenerator {
-            AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device);
+            AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String quantName, String modelName, Device device);
         }
         public static class PyTorchModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String quantName, String modelName, Device device) {
                 ModelDesc.Pytorch modelD = ModelDesc.getModel(dir.getModelDesc().getPytorch(), modelName);
                 if (modelD == null) {
                     return null;
@@ -246,7 +278,7 @@ public class Model {
         }
         public static class Caffe2ModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String quantName, String modelName, Device device) {
                 ModelDesc.Caffe2 modelD = ModelDesc.getModel(dir.getModelDesc().getCaffe2(), modelName);
                 if (modelD == null) {
                     return null;
@@ -260,7 +292,7 @@ public class Model {
         }
         public static class TfLiteModelGenerator implements IModelGenerator {
             @Override
-            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String modelName, Device device) {
+            public AbstractModel genModel(Activity activity, LogUtil.Log log, ModelDir dir, String quantName, String modelName, Device device) {
                 ModelDesc.Tflite modelD = ModelDesc.getModel(dir.getModelDesc().getTflite(), modelName);
                 if (modelD == null) {
                     return null;
@@ -269,7 +301,7 @@ public class Model {
                     Util.showToast("device not support", activity);
                     return null;
                 }
-                return TfLiteModels.newModel(log, dir, modelD, device);
+                return TfLiteModels.newModel(log, dir, quantName, modelD, device);
             }
         }
     }

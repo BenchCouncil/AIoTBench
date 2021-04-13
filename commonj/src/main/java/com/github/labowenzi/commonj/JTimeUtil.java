@@ -15,4 +15,16 @@ public class JTimeUtil {
     public static double msToSDouble(long timeMs) {
         return timeMs / 1000.0d;
     }
+
+    public static String timeElapsedHours(long timeMs) {
+        long ori = timeMs;
+        long ms = ori % 1000;
+        ori /= 1000;
+        long s = ori % 60;
+        ori /= 60;
+        long m = ori % 60;
+        ori /= 60;
+        long h = ori;
+        return h + "H" + m + "m" + s + "s" + ms;
+    }
 }

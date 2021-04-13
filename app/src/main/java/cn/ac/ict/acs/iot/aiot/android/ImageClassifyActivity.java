@@ -22,6 +22,8 @@ import cn.ac.ict.acs.iot.aiot.android.dataset.Dataset;
 import cn.ac.ict.acs.iot.aiot.android.dataset.IDataset;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -31,10 +33,16 @@ import cn.ac.ict.acs.iot.aiot.android.util.Util;
 public class ImageClassifyActivity extends AppCompatActivity {
     public static final String TAG = "imageClassify";
 
+    public static final String EXTRA_RESOURCE_NAME = "extra_resource_name";
+    public static final String EXTRA_DIR_MODEL = "extra_dir_model";
+    public static final String EXTRA_DIR_DATASET = "extra_dir_dataset";
     public static final String EXTRA_FRAMEWORK_NAME = "extra_framework_name";
+    public static final String EXTRA_QUANT_NAME = "extra_quant_name";
     public static final String EXTRA_MODEL_NAME = "extra_model_name";
     public static final String EXTRA_DATASET_NAME = "extra_dataset_name";
     public static final String EXTRA_DEVICE_NAME = "extra_device_name";
+
+    public static final String RESOURCE_NAME_DEFAULT = "app_resource_name_default";
 
     public static final int TIME_RECORD_TOP_K = 3;
     public static final int SCORE_TOP_K = 5;
@@ -42,7 +50,11 @@ public class ImageClassifyActivity extends AppCompatActivity {
     private Model modelI;
     private Dataset datasetI;
 
+    private String resourceName;
+    private String dirModel;
+    private String dirDataset;
     private String frameworkName;
+    private String quantName;
     private String modelName;
     private String datasetName;
     private String deviceName;
@@ -65,14 +77,19 @@ public class ImageClassifyActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mHandler = new MHandler(this);
-        modelI = Model.getInstance();
-        datasetI = Dataset.getInstance(this);
         Intent intent = getIntent();
+        resourceName = intent.getStringExtra(EXTRA_RESOURCE_NAME);
+        dirModel = intent.getStringExtra(EXTRA_DIR_MODEL);
+        dirDataset = intent.getStringExtra(EXTRA_DIR_DATASET);
         frameworkName = intent.getStringExtra(EXTRA_FRAMEWORK_NAME);
+        quantName = intent.getStringExtra(EXTRA_QUANT_NAME);
         modelName = intent.getStringExtra(EXTRA_MODEL_NAME);
         datasetName = intent.getStringExtra(EXTRA_DATASET_NAME);
         deviceName = intent.getStringExtra(EXTRA_DEVICE_NAME);
         if (JUtil.isEmpty(frameworkName)
+                || JUtil.isEmpty(resourceName)
+                || JUtil.isEmpty(dirModel)
+                || JUtil.isEmpty(dirDataset)
                 || JUtil.isEmpty(modelName)
                 || JUtil.isEmpty(datasetName)
                 || JUtil.isEmpty(deviceName)) {
@@ -80,12 +97,21 @@ public class ImageClassifyActivity extends AppCompatActivity {
             finish();
             return;
         }
+        modelI = MainActivity.getAiotModel(resourceName);
+        modelI.setModelDir(dirModel);
+        datasetI = MainActivity.getAiotDataset(this, resourceName);
+        datasetI.setDatasetDir(dirDataset);
         String fmd = frameworkName
+                + '_' + quantName
                 + '_' + modelName
                 + '_' + datasetName
                 + '_' + deviceName;
         log = LogUtil.Log.inLogDir("ic_" + fmd + ".log");
+        log.logln("resource=" + resourceName);
+        log.logln("dirModel=" + dirModel);
+        log.logln("dirDataset=" + dirDataset);
         log.logln("framework=" + frameworkName);
+        log.logln("quant=" + quantName);
         log.logln("model=" + modelName);
         log.logln("dataset=" + datasetName);
         log.logln("device=" + deviceName);
@@ -116,7 +142,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
             Util.showToast("wrong device", this);
             return false;
         }
-        model = modelI.getModel(this, log, frameworkName, modelName, device);
+        model = modelI.getModel(this, log, frameworkName, quantName, modelName, device);
         if (model == null || !model.isStatusOk()) {
             Util.showToast("load model err", this);
             return false;
@@ -157,6 +183,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
     private void setViewsByData() {
         StringBuilder infoSb = new StringBuilder();
         infoSb.append("framework: ").append(frameworkName);
+        infoSb.append("\nquant:").append(quantName);
         infoSb.append("\nmodel: ").append(modelName);
         infoSb.append("\ndataset: ").append(datasetName);
         if (dataset != null) {

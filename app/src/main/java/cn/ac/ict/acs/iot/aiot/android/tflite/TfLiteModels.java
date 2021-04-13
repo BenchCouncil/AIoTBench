@@ -11,8 +11,8 @@ import com.github.labowenzi.commonj.log.Log;
 import java.io.IOException;
 import java.util.List;
 
-import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
-import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
@@ -24,8 +24,8 @@ import cn.ac.ict.acs.iot.aiot.android.util.Util;
  */
 public class TfLiteModels {
 
-    public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, ModelDesc.Tflite desc, Model.Device device) {
-        String filePath = desc.getNet_tflite_filepath(dir);
+    public static TfLiteModel newModel(LogUtil.Log log, Model.ModelDir dir, String quantName, ModelDesc.Tflite desc, Model.Device device) {
+        String filePath = desc.getNet_tflite_filepath(dir, quantName);
         String labelsFilePath = desc.getLabels_filepath(dir);
 
         if (JUtil.isEmpty(filePath) || JUtil.isEmpty(labelsFilePath) ) {

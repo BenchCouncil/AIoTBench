@@ -1,13 +1,16 @@
 package cn.ac.ict.acs.iot.aiot.android.util;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.widget.Toast;
 
 import com.github.labowenzi.commonj.JIoUtil;
 import com.github.labowenzi.commonj.log.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -91,5 +94,33 @@ public class Util {
             JIoUtil.closeSilently(is);
             return file.getAbsolutePath();
         }
+    }
+
+    /**
+     * 总的运存（内存）大小;
+     */
+    public static long getTotalRamSize(Context context) {
+        String dir = "/proc/meminfo";
+        try {
+            FileReader fr = new FileReader(dir);
+            BufferedReader br = new BufferedReader(fr, 2048);
+            String memoryLine = br.readLine();
+            String subMemoryLine = memoryLine.substring(memoryLine.indexOf("MemTotal:"));
+            br.close();
+            return Integer.parseInt(subMemoryLine.replaceAll("\\D+", "")) * 1024L;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * 获取当前可用运存（内存），返回数据以字节为单位。
+     */
+    public static long getAvailableMemory(Context context) {
+        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+        am.getMemoryInfo(memoryInfo);
+        return memoryInfo.availMem;
     }
 }

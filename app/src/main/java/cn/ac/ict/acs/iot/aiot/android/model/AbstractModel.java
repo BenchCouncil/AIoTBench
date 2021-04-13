@@ -12,8 +12,8 @@ import com.github.labowenzi.commonj.JJsonUtils;
 import com.github.labowenzi.commonj.ThreadPoolUtil;
 import com.github.labowenzi.commonj.log.Log;
 
-import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
-import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.dataset.IDataset;
 import cn.ac.ict.acs.iot.aiot.android.util.BitmapUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
@@ -82,6 +82,7 @@ public abstract class AbstractModel implements IModel {
     }
     @WorkerThread
     protected void doImageClassificationContinue() {
+
         if (isDestroyed() || isPreDestroyed()) {
             return;
         }
@@ -99,7 +100,7 @@ public abstract class AbstractModel implements IModel {
             if (isDestroyed() || isPreDestroyed()) {
                 break;
             }
-            doImageClassificationContinue(i, status);
+            doImageClassificationContinue(i, status);//一张图片做一次分类
             sendMsg(i, status);
         }
         timeRecord.imageClassificationTotal.setEnd();

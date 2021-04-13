@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AIoT Bench</string>
+    <string name="app_name">AIoTBench</string>
 
     <string name="not_implemented">not implemented</string>
 </resources>

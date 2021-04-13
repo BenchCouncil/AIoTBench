@@ -1,5 +1,7 @@
 package cn.ac.ict.acs.iot.aiot.android.model;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.github.labowenzi.commonj.JEnumUtil;
@@ -194,8 +196,18 @@ public class ModelDesc {
         public String getNet_tflite() {
             return net_tflite;
         }
-        public String getNet_tflite_filepath(Model.ModelDir dir) {
-            return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + net_tflite;
+
+        public String getNet_tflite_filepath(Model.ModelDir dir, String quantName) {
+            if (quantName.equals("no"))
+                return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite" + "/" + this.dir + "/" + net_tflite;
+            else if (quantName.equals("f16"))
+                return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite_quant_f16" + "/" + this.dir + "/" + net_tflite;
+            else if (quantName.equals("full_int")){
+                return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite_quant_int" + "/" + this.dir + "/" + net_tflite;}
+            else if (quantName.equals("DR")){
+                return JUtil.isEmpty(net_tflite) ? null : dir.getDirPath() + "/" + "tflite_quant_dr" + "/" + this.dir + "/" + net_tflite;
+            }
+            else return null;
         }
 
         public String getQuantization() {

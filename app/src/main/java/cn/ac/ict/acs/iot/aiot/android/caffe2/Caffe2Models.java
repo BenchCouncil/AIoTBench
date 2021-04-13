@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import cn.ac.ict.acs.iot.aiot.android.StatisticsScore;
-import cn.ac.ict.acs.iot.aiot.android.StatisticsTime;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
+import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.dataset.IDataset;
 import cn.ac.ict.acs.iot.aiot.android.dataset.IImageClasses;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;

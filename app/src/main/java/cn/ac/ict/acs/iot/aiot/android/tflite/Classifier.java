@@ -233,7 +233,7 @@ public abstract class Classifier {
 
     // Reads type and shape of input and output tensors, respectively.
     int imageTensorIndex = 0;
-    int[] imageShape = tflite.getInputTensor(imageTensorIndex).shape(); // {1, height, width, 3}
+    int[] imageShape = tflite.getInputTensor(imageTensorIndex).shape(); // {1, height, width, 3}//note:from model
     imageSizeY = imageShape[1];
     imageSizeX = imageShape[2];
     DataType imageDataType = tflite.getInputTensor(imageTensorIndex).dataType();
