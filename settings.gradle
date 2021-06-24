@@ -1,0 +1,2 @@
+include ':app', ':commonj'
+rootProject.name='AIoT_Bench'

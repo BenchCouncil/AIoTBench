@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_corner_bg"
+    android:layout_margin="20dp"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView
+        android:id="@+id/upload_title_cn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="上传数据库？"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/cardview_dark_background"
+        android:layout_marginBottom="0dp">
+    </TextView>
+    <TextView
+        android:id="@+id/upload_title_en"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Whether to upload your result to server?"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/cardview_dark_background"
+        android:layout_marginBottom="2mm">
+    </TextView>
+    <TextView
+        android:id="@+id/upload_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="全部测试已完成，是否花费您短暂时间将测试结果上传至服务器？上传完成后窗口将自动关闭，上传过程中请勿离开。\nplease wait until the transmission finish and the window will close automatically."
+        android:textSize="15sp"
+        android:textColor="@color/colorGray"
+        android:layout_marginBottom="10dp">
+
+    </TextView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+        <Button
+            android:padding="1dp"
+            android:id="@+id/upload_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:background="@null"
+            android:text="Cancel"
+            android:textColor="@color/colorSlightBlue"
+            android:textSize="18sp"
+            android:layout_weight="1"/>
+        <Button
+            android:padding="1dp"
+            android:id="@+id/upload_ok"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:background="@null"
+            android:text="OK"
+            android:textColor="@color/colorSlightBlue"
+            android:textSize="18sp"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+
+</LinearLayout>

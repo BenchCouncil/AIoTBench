@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".blockTestActivity">
+
+    <GridLayout
+        android:id="@+id/GridLayout1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:columnCount="1"
+        android:orientation="horizontal"
+        android:rowCount="6"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/ll_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tv_blocks"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="block类型"
+                android:padding="16dp"
+                android:text=""
+                android:textAlignment="center" />
+
+            <Button
+                android:id="@+id/btn_block"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="选择" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/block_para_example"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text=""
+            android:textAlignment="center" />
+
+        <EditText
+            android:id="@+id/para1"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="参数1"
+            android:selectAllOnFocus="true"
+            android:textColorHint="#95A1AA" />
+
+        <EditText
+            android:id="@+id/para2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="参数2"
+            android:selectAllOnFocus="true"
+            android:textColorHint="#95A1AA" />
+
+        <EditText
+            android:id="@+id/para3"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="参数3"
+            android:selectAllOnFocus="true"
+            android:textColorHint="#95A1AA" />
+
+        <EditText
+            android:id="@+id/para4"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="参数4"
+            android:selectAllOnFocus="true"
+            android:textColorHint="#95A1AA" />
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <Button
+                android:id="@+id/btn_block_go"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:layout_weight="1"
+                android:text="运行"/>
+            <Button
+                android:id="@+id/btn_remove_parameter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:layout_weight="1"
+                android:text="清除参数"/>
+        </LinearLayout>
+
+    </GridLayout>
+    <TextView
+        android:id="@+id/tv_block_globalInfo"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text=""
+        android:textAlignment="center"
+        app:layout_constraintTop_toBottomOf="@id/GridLayout1"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/tv_block_result"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="结果"
+        android:padding="16dp"
+        android:text=""
+        android:textAlignment="center"
+        app:layout_constraintTop_toBottomOf="@id/tv_block_globalInfo"
+        tools:ignore="MissingConstraints" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
