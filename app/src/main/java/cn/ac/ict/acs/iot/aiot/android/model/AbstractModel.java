@@ -2,6 +2,8 @@ package cn.ac.ict.acs.iot.aiot.android.model;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.Message;
 
@@ -28,6 +30,8 @@ public abstract class AbstractModel implements IModel {
     public static final int INPUT_TENSOR_HEIGHT = 224;
 
     public static final int HANDLER_DO_IMAGE_CLASSIFICATION = 59250;
+    public static final int HANDLER_DO_OBJECT_DETECTION= 69250;
+
 
     public final StatisticsTime.TimeRecord timeRecord;
 
@@ -80,6 +84,10 @@ public abstract class AbstractModel implements IModel {
     public void doImageClassification() {
         ThreadPoolUtil.run(this::doImageClassificationContinue);
     }
+    @Override
+    public void doObjectDetection() {
+        ThreadPoolUtil.run(this::doObjectDetectionContinue);
+    }
     @WorkerThread
     protected void doImageClassificationContinue() {
 
@@ -95,7 +103,7 @@ public abstract class AbstractModel implements IModel {
         timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
         Status status = new Status(scoreTopK);
         sendMsg(-1, status);
-        timeRecord.imageClassificationTotal.setStart();
+        timeRecord.taskTotal.setStart();
         for (int i=0; i<dataset.size(); i++) {
             if (isDestroyed() || isPreDestroyed()) {
                 break;
@@ -103,7 +111,7 @@ public abstract class AbstractModel implements IModel {
             doImageClassificationContinue(i, status);//一张图片做一次分类
             sendMsg(i, status);
         }
-        timeRecord.imageClassificationTotal.setEnd();
+        timeRecord.taskTotal.setEnd();
         sendMsg(dataset.size(), status);
         workThreadRunning = false;
         if (isPreDestroyed() && !isDestroyed()) {
@@ -117,7 +125,7 @@ public abstract class AbstractModel implements IModel {
         StatisticsTime.TimeRecord.StartEndTime time = new StatisticsTime.TimeRecord.StartEndTime();
         timeRecord.images[imageIndex] = time;
         String imageFilePath = dataset.get(imageIndex);
-        int target = dataset.getClassIndex(imageIndex);
+        int target = dataset.getClassIndex(imageIndex);//note:Ground Truth idx
 
         time.setStart();
         log.loglnA("ic", "index", imageIndex, "all", "start", time.start);
@@ -145,6 +153,130 @@ public abstract class AbstractModel implements IModel {
     }
 
     @WorkerThread
+    protected void doObjectDetectionContinue() {
+        if (isDestroyed() || isPreDestroyed()) {
+            return;
+        }
+        workThreadRunning = true;
+        if (dataset == null || dataset.size() <= 0) {
+            sendMsg(dataset == null ? -1 : dataset.size(), null);
+            workThreadRunning = false;
+            return;
+        }
+        timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
+        Status status = new Status(scoreTopK);
+        sendMsg(-1, status);
+        timeRecord.taskTotal.setStart();
+        for (int i=0; i<dataset.size(); i++) {
+            if (isDestroyed() || isPreDestroyed()) {
+                break;
+            }
+            doObjectDetectionContinue(i, status);//一张图片做一次检测
+            sendMsg(i, status);
+        }
+        timeRecord.taskTotal.setEnd();
+        sendMsg(dataset.size(), status);
+        workThreadRunning = false;
+        if (isPreDestroyed() && !isDestroyed()) {
+            this.destroyed = true;
+            doDestroy();
+        }
+    }
+    public static Matrix getTransformationMatrix(
+            final int srcWidth,
+            final int srcHeight,
+            final int dstWidth,
+            final int dstHeight,
+            final int applyRotation,
+            final boolean maintainAspectRatio) {
+        final Matrix matrix = new Matrix();
+        if (applyRotation != 0) {
+            if (applyRotation % 90 != 0) {
+            }
+
+            // Translate so center of image is at origin.
+            matrix.postTranslate(-srcWidth / 2.0f, -srcHeight / 2.0f);
+
+            // Rotate around origin.
+            matrix.postRotate(applyRotation);
+        }
+
+        // Account for the already applied rotation, if any, and then determine how
+        // much scaling is needed for each axis.
+        final boolean transpose = (Math.abs(applyRotation) + 90) % 180 == 0;
+//        android.util.Log.i("hello-transpose",String.valueOf(transpose));
+        final int inWidth = transpose ? srcHeight : srcWidth;
+        final int inHeight = transpose ? srcWidth : srcHeight;
+//        android.util.Log.i("hello-wid-hei",String.valueOf(inWidth)+" "+inHeight+" "+dstWidth+" " +dstHeight);
+        // Apply scaling if necessary.
+        if (inWidth != dstWidth || inHeight != dstHeight) {
+            final float scaleFactorX = dstWidth / (float) inWidth;
+            final float scaleFactorY = dstHeight / (float) inHeight;
+
+            if (maintainAspectRatio) {
+                // Scale by minimum factor so that dst is filled completely while
+                // maintaining the aspect ratio. Some image may fall off the edge.
+                final float scaleFactor = Math.max(scaleFactorX, scaleFactorY);
+                matrix.postScale(scaleFactor, scaleFactor);
+            } else {
+                // Scale exactly to fill dst from src.
+                matrix.postScale(scaleFactorX, scaleFactorY);
+            }
+        }
+
+        if (applyRotation != 0) {
+            // Translate back from origin centered reference to destination frame.
+            matrix.postTranslate(dstWidth / 2.0f, dstHeight / 2.0f);
+        }
+
+        return matrix;
+    }
+    @WorkerThread
+    protected void doObjectDetectionContinue(int imageIndex, Status status) {
+        StatisticsTime.TimeRecord.StartEndTime time = new StatisticsTime.TimeRecord.StartEndTime();
+        timeRecord.images[imageIndex] = time;
+        String imageFilePath = dataset.get(imageIndex);
+        int target = dataset.getClassIndex(imageIndex);
+
+        time.setStart();
+        log.loglnA("ic", "index", imageIndex, "all", "start", time.start);
+
+        log.loglnA("ic", "index", imageIndex, "bitmap", "start", StatisticsTime.TimeRecord.time());
+        status.bitmapOri = BitmapFactory.decodeFile(imageFilePath);
+        int previewWidth=status.bitmapOri.getWidth();
+        int previewHeight=status.bitmapOri.getHeight();
+        status.bitmapCroped=Bitmap.createBitmap(300,300, Bitmap.Config.ARGB_8888);
+//        status.bitmapCroped = convertBitmap(status.bitmapOri);
+        Matrix frameToCropTransform = getTransformationMatrix(
+                previewWidth, previewHeight,
+                300, 300,
+                90, false);
+
+        Matrix cropToFrameTransform = new Matrix();
+        android.util.Log.i("hello-croptoframe",cropToFrameTransform.toShortString());
+        frameToCropTransform.invert(cropToFrameTransform);
+        Canvas canvas = new Canvas(status.bitmapCroped);
+        canvas.drawBitmap(status.bitmapOri, frameToCropTransform, null);
+        //todo:change the image-processing
+        log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
+
+        try {
+            int[] imageSize = new int[] {status.bitmapCroped.getWidth(), status.bitmapCroped.getHeight()};
+            log.loglnA("ic", "index", imageIndex, "bitmap.size", JJsonUtils.toJson(imageSize), "ic", "start", StatisticsTime.TimeRecord.time());
+            StatisticsScore statistics = doObjectDetectionContinue(status.bitmapCroped, target);
+
+            log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);
+            status.statistics.updateBy(statistics);
+            log.loglnA("ic", "index", imageIndex, "statistics", "end", StatisticsTime.TimeRecord.time());
+        } catch (Exception e) {
+            log.loglnA("ic", "index", imageIndex, "do image classification error", "exception", e);
+            Log.e("ic", "do image classification error", e);
+        }
+        time.setEnd();
+        log.loglnA("ic", "index", imageIndex, "all", "end", time.end);
+        log.loglnA("ic", "index", imageIndex, "all", "end", time);
+    }
+    @WorkerThread
     protected Bitmap convertBitmap(Bitmap bitmapOri) {
         if (modelDesc != null) {
             ModelDesc.BaseModelDesc.BitmapConvertMethod m = modelDesc.getBitmapConvertMethod();
@@ -160,6 +292,8 @@ public abstract class AbstractModel implements IModel {
     @WorkerThread
     protected abstract StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target);
 
+    @WorkerThread
+    protected abstract StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target);
     private void sendMsg(int process, Status status) {
         Message message = handler.obtainMessage();
         message.what = what;

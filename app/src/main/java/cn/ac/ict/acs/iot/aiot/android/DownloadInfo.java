@@ -62,7 +62,7 @@ public class DownloadInfo {
             desc.resources = new ArrayList<>();
             ResourceOne one = new ResourceOne();
             one.name = "20201203_model_6_dataset_100x5";
-            one.desc = "描述2-model:20201105_novgg:6-dataset:100x5";
+            one.desc = "desc-2-model:20201105_novgg:6-dataset:100x5";
             one.url_file = "http://125.39.136.212:8484/20201203_model_6_dataset_100x5.zip";
             one.size_total = 855169109;
             desc.resources.add(one);

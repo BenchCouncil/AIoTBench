@@ -94,7 +94,11 @@ public class MainActivity extends AppCompatActivity {
         datasetName = null;
         deviceName = null;
         askPermission();
-        initDirAndViews();
+        try {
+            initDirAndViews();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void mkdirs() {
@@ -102,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         JIoUtil.mkdir(appDataDir);
     }
 
-    private void initDir() {
+    private void initDir() throws InterruptedException {
         if (!JUtil.isEmpty(modelI.getDirs())) {
             dirModel = modelI.getDirs()[0];
             modelI.setModelDir(dirModel);
@@ -117,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         datasetName = datasetI.getDefaultDatasetName();
         deviceName = Model.Device.getName(Model.Device.CPU);
     }
-    private void initDirAndViews() {
+    private void initDirAndViews() throws InterruptedException {
         initDir();
         refreshResourceViews();
         refreshDirModelViews();
@@ -160,7 +164,11 @@ public class MainActivity extends AppCompatActivity {
                     // reset models;
                     modelI = Model.resetInstance();
                     datasetI = Dataset.resetInstance(this);
-                    initDirAndViews();
+                    try {
+                        initDirAndViews();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
                 break;
             }
@@ -213,12 +221,16 @@ public class MainActivity extends AppCompatActivity {
         String title = "resource";
         String[] items = getAiotResources();
         DialogInterface.OnClickListener itemsL = (dialog, which) -> {
-            onSelectResource(which);
+            try {
+                onSelectResource(which);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             dialog.dismiss();
         };
         onSelect(title, items, itemsL);
     }
-    private void onSelectResource(int index) {
+    private void onSelectResource(int index) throws InterruptedException {
         resourceName = getAiotResources()[index];
         modelI = getAiotModel(resourceName);
         datasetI = getAiotDataset(this, resourceName);
@@ -228,12 +240,16 @@ public class MainActivity extends AppCompatActivity {
         String title = "model dirs";
         String[] items = modelI.getDirs();
         DialogInterface.OnClickListener itemsL = (dialog, which) -> {
-            onSelectDirModel(which);
+            try {
+                onSelectDirModel(which);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             dialog.dismiss();
         };
         onSelect(title, items, itemsL);
     }
-    private void onSelectDirModel(int index) {
+    private void onSelectDirModel(int index) throws InterruptedException {
         dirModel = modelI.getDirs()[index];
         modelI.setModelDir(dirModel);
         modelName = modelI.getDefaultModelName(frameworkName);

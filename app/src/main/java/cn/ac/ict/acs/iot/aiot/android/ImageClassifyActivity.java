@@ -133,7 +133,7 @@ public class ImageClassifyActivity extends AppCompatActivity {
             Util.showToast("no framework", this);
             return false;
         }
-        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).names)) {
+        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).image_classifiction_names)) {
             Util.showToast(R.string.not_implemented, this);
             return false;
         }

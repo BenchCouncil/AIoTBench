@@ -60,6 +60,7 @@ public class MainActivityV2 extends AppCompatActivity {
         findViewById(R.id.btn_result_list).setOnClickListener(view -> onResultList());
 //        findViewById(R.id.btn_block_go).setOnClickListener(view -> onBlockGo());
         findViewById(R.id.btn_old_debug).setOnClickListener(view -> onOldDebug());
+        findViewById(R.id.btn_object_detection).setOnClickListener(view -> onObjectDetection());
         askPermission();
     }
 
@@ -138,6 +139,9 @@ public class MainActivityV2 extends AppCompatActivity {
 
     private void onOldDebug() {
         onBtn(MainActivity.class);
+    }
+    private void onObjectDetection() {
+        onBtn(ObjectDetectionActivity.class);
     }
 }
 

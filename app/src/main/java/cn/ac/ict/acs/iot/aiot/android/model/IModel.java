@@ -20,4 +20,5 @@ public interface IModel {
      * do image classification, background, set send statistics data by handler;
      */
     void doImageClassification();
+    void doObjectDetection();
 }

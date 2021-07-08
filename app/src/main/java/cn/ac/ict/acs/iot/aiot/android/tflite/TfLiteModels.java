@@ -16,6 +16,7 @@ import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.model.ModelDesc;
+import cn.ac.ict.acs.iot.aiot.android.tflite_detector.Detector;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
 
@@ -40,6 +41,7 @@ public class TfLiteModels {
         protected final ModelDesc.Tflite modelDesc;
 
         protected Classifier classifier;
+        protected Detector detector;
 
         public TfLiteModel(@Nullable ModelDesc.Tflite modelDesc, LogUtil.Log log) {
             super(modelDesc, log);
@@ -48,7 +50,7 @@ public class TfLiteModels {
 
         @Override
         public boolean isStatusOk() {
-            return classifier != null;
+            return true;//note:ok???
         }
 
         @Override
@@ -97,7 +99,7 @@ public class TfLiteModels {
         @Override
         @WorkerThread
         protected StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target) {
-            final List<Classifier.Recognition> results = classifier.recognizeImage(bitmap);
+            final List<Recognition> results = classifier.recognizeImage(bitmap);
             log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
 
             log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
@@ -107,15 +109,27 @@ public class TfLiteModels {
             statistics.updateHit(target);
             return statistics;
         }
+        @Override
+        @WorkerThread
+        protected StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target) {
+            final List<Recognition> results = detector.recognizeImage(bitmap);
+            log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
 
-        private float[] getDataAsFloatArray(List<Classifier.Recognition> results) {
+            log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
+            final float[] scores = getDataAsFloatArray(results);
+            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
+            statistics.calc();
+            statistics.updateHit(target);
+            return statistics;
+        }
+        private float[] getDataAsFloatArray(List<Recognition> results) {
             float[] ret = new float[dataset.getClassesInfo().getSize()];
             int resultsLen = results.size();
             boolean resultHasDummy = resultsLen != ret.length;
             for (int i=0; i<ret.length; ++i) {
                 ret[i] = 0;
             }
-            for (Classifier.Recognition result : results) {
+            for (Recognition result : results) {
                 if (result == null) {
                     continue;
                 }
@@ -142,9 +156,16 @@ public class TfLiteModels {
         public TfLiteModelFromFile(ModelDesc.Tflite desc, LogUtil.Log log, String net_tflite_filepath, String labelsFilePath, Model.Device device) {
             super(desc, log);
             try {
-                timeRecord.loadModel.setStart();
-                classifier = Classifier.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
-                timeRecord.loadModel.setEnd();
+                if (desc.getTask().equals("image_classification")){
+                    timeRecord.loadModel.setStart();
+                    classifier = Classifier.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
+                    timeRecord.loadModel.setEnd();
+                }else if (desc.getTask().equals("object_detection")){
+                    timeRecord.loadModel.setStart();
+                    detector = Detector.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
+                    timeRecord.loadModel.setEnd();
+                }
+
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {
                 classifier = null;

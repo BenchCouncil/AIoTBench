@@ -135,6 +135,11 @@ public class Caffe2Models {
             statistics.updateHit(target);
             return statistics;
         }
+
+        @Override
+        protected StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target) {
+            return null;
+        }
     }
     public static class Caffe2ModelFromFile extends Caffe2Model {
         public Caffe2ModelFromFile(ModelDesc.Caffe2 desc, LogUtil.Log log, String initNetFilePath, String predictNetFilePath, String labelsFilePath) {

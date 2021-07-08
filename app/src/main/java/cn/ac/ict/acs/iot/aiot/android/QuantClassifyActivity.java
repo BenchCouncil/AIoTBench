@@ -41,6 +41,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -165,7 +166,7 @@ public class QuantClassifyActivity extends AppCompatActivity {
         if (JUtil.isEmpty(resourceName)) {
             return;
         }
-        modelI = Model.getInstance(DownloadInfo.getDirPathModels(resourceName));
+        modelI = Model.getInstance(DownloadInfo.getDirPathModels(resourceName));//note:get the model file in downloads folder
         if (!JUtil.isEmpty(modelI.getDirs())) {
             modelI.setModelDir(modelI.getDirs()[0]);
         }
@@ -173,7 +174,7 @@ public class QuantClassifyActivity extends AppCompatActivity {
         String quants[] = Model.getSupportedQuant("tflite");
         for (int i = 1; i < quants.length; i++) {
             String quantName = quants[i];
-            for (String modelName : modelI.getModelDir().getInfo("tflite").names) {
+            for (String modelName : modelI.getModelDir().getInfo("tflite").image_classifiction_names) {
                 for (String deviceName : Model.Device.getNames(Model.getSupportedDevices("tflite"))) {
                     // todo: maybe from config file;
                     WorkLoadStatus status = new WorkLoadStatus();
@@ -308,7 +309,7 @@ public class QuantClassifyActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try {
-                                Socket socket = new Socket("192.168.122.72", 3456);
+                                Socket socket = new Socket("192.168.1.18", 3456);
                                 DataInputStream in = new DataInputStream(socket.getInputStream());
                                 File file1 = new File(result_filepath);
                                 System.out.println("文件大小：" + file1.length() + "B");
@@ -346,7 +347,10 @@ public class QuantClassifyActivity extends AppCompatActivity {
 //                                Looper.prepare();
 //                                Toast.makeText(QuantClassifyActivity.this, "upload done, thanks for your waiting!", Toast.LENGTH_LONG).show();
 //                                Looper.loop();
-                            } catch (FileNotFoundException e) {
+                            } catch(UnknownHostException e){//Note:new
+                                e.printStackTrace();
+                                alertDialog.dismiss();
+                            }catch (FileNotFoundException e) {
                                 e.printStackTrace();
                                 alertDialog.dismiss();
                             } catch (IOException e) {
@@ -414,7 +418,7 @@ public class QuantClassifyActivity extends AppCompatActivity {
             return;
         }
         String modelName = status.model;
-        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).names)) {
+        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).image_classifiction_names)) {
             Util.showToast(R.string.not_implemented, this);
             return;
         }

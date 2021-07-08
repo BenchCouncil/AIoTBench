@@ -477,7 +477,8 @@ public class blockTestActivity extends AppCompatActivity {
             inputsize[2] = Integer.parseInt(inputsize_str[1]);
             inputsize[3] = Integer.parseInt(inputsize_str[2]);
 
-            File file = new File(datasetFileName + datasetName);
+//            File file = new File(datasetFileName + datasetName);
+            //model input
             byte[] bytes = Files.readAllBytes(Paths.get(datasetFileName + datasetName));
             ByteBuffer bbf = ByteBuffer.wrap(bytes);
             int[] probabilityShape = tflite.getOutputTensor(0).shape();

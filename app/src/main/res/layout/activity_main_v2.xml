@@ -64,7 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/ll_old_debug"
+        app:layout_constraintBottom_toTopOf="@+id/ll_object_detection"
         app:layout_constraintLeft_toRightOf="parent"
         app:layout_constraintRight_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_image_classify">
@@ -77,6 +77,23 @@
             android:text="Quantizing Test"/>
     </RelativeLayout>
     <RelativeLayout
+        android:id="@+id/ll_object_detection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/ll_old_debug"
+        app:layout_constraintLeft_toRightOf="parent"
+        app:layout_constraintRight_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ll_quant_classify">
+
+        <Button
+            android:id="@+id/btn_object_detection"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="object detection"/>
+    </RelativeLayout>
+    <RelativeLayout
         android:id="@+id/ll_old_debug"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -84,7 +101,7 @@
         app:layout_constraintBottom_toTopOf="@+id/ll_result_list"
         app:layout_constraintLeft_toRightOf="parent"
         app:layout_constraintRight_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ll_image_classify">
+        app:layout_constraintTop_toBottomOf="@+id/ll_object_detection">
 
         <Button
             android:id="@+id/btn_old_debug"

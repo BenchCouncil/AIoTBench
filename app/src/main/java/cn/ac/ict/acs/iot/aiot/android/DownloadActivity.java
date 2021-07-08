@@ -110,13 +110,13 @@ public class DownloadActivity extends AppCompatActivity {
         String text;
         boolean clickable;
         if (sizeDownload <= 0) {
-            text = "未下载";
+            text = "Unloaded";
             clickable = true;
         } else if (sizeDownload >= sizeTotal) {
-            text = "已下载";
+            text = "Downloaded";
             clickable = false;
         } else {
-            text = "下载中";
+            text = "Downloading";
             clickable = false;
         }
         text = text + "：" + String.format(Locale.getDefault(), "%.2f", progress) + "%" + "：" + sizeDownload + " Byte / " + sizeTotal + " Byte";
@@ -125,7 +125,7 @@ public class DownloadActivity extends AppCompatActivity {
             timeUsed += System.currentTimeMillis()-downloadStartTime;
         }
         if (timeUsed > 0) {
-            text = text + "：已下载耗时 " + JTimeUtil.timeElapsedHours(timeUsed);
+            text = text + "：Elapsed " + JTimeUtil.timeElapsedHours(timeUsed);
         }
         mTvProgress.setText(text);
         mBtnDownload.setClickable(clickable);
@@ -183,7 +183,7 @@ public class DownloadActivity extends AppCompatActivity {
 
     private void onDownload() {
         if (sizeDownload >= sizeTotal) {
-            Util.showToast("已下载完成", this);
+            Util.showToast("finished", this);
             return;
         }
         dl = new DownloadL(this, urlFile, name);

@@ -84,6 +84,11 @@ public class PyTorchModels {
             statistics.updateHit(target);
             return statistics;
         }
+
+        @Override
+        protected StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target) {
+            return null;
+        }
     }
 
     public static class PyTorchModelFromFile extends PyTorchModel {

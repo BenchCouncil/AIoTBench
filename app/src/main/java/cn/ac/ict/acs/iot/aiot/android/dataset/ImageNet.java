@@ -29,6 +29,7 @@ public class ImageNet {
 
     public ImageNet(String dirPath, DatasetDesc.ImageNet imageNetDesc) {
         String imageNetDirPath = dirPath + "/" + IMAGENET_DIR;
+
         try {
             classesInfo = new ImageClasses(imageNetDirPath, imageNetDesc.getClasses_info());
         } catch (FileNotFoundException e) {
@@ -134,10 +135,10 @@ public class ImageNet {
 
         public Dataset(String imageNetDirPath, DatasetDesc.ImageNet.Dataset dataset, ImageClasses classesInfo) {
             this.name = dataset.getName();
-            this.rootDir = imageNetDirPath + "/" + dataset.getDir();
-            this.classesInfo = classesInfo;
-            this.classes = classesInfo.classes;
-            this.classesFiles = new String[classes.length][];
+            this.rootDir = imageNetDirPath + "/" + dataset.getDir();//storage/emulated/0/aiot/download/20201203_model_6_dataset_100x5/aiot/datasets/20201116/coco/coco2017/validation
+            this.classesInfo = classesInfo;//coco2017_val(catagory label map)
+            this.classes = classesInfo.classes;//catagories
+            this.classesFiles = new String[classes.length][];//all images in every catagories
             if (TextUtils.isEmpty(rootDir)) {
                 throw new RuntimeException("No imageNet dir " + rootDir);
             }

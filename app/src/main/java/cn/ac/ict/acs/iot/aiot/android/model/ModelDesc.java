@@ -8,6 +8,7 @@ import com.github.labowenzi.commonj.JEnumUtil;
 import com.github.labowenzi.commonj.JUtil;
 
 import java.util.List;
+import java.util.Vector;
 
 /**
  * json model;
@@ -41,6 +42,18 @@ public class ModelDesc {
             names[i] = models.get(i).getName();
         }
         return names;
+    }
+    public static  String[] getTaskNames(List<Tflite> models,String task) {
+        if (JUtil.isEmpty(models)) {
+            return null;
+        }
+        Vector<String> names=new Vector<>();
+        for(Tflite model:models){
+            if (model.getTask().equals(task)){
+                names.add(model.getName());
+            }
+        }
+        return names.toArray(new String[names.size()]);
     }
     public static  <T extends BaseModelDesc> T getModel(List<T> models, String name) {
         if (JUtil.isEmpty(models) || JUtil.isEmpty(name)) {
@@ -188,6 +201,11 @@ public class ModelDesc {
         private float[] norm_mean;
         private float[] norm_std_dev;
         private String labels;
+        private String task;
+
+        public String getTask() {
+            return task;
+        }
 
         public String getDir() {
             return dir;

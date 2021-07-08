@@ -53,14 +53,14 @@ public class Model {
     public static final String Quant_DR = "DR";
     public static final String Quant_DEFAULT = Quant_DR;
 
-    public static final String[] FRAMEWORKS = {
+    public static final String[] FRAMEWORKS = {//todo:change temporarily
             FRAMEWORK_TFLITE,
             FRAMEWORK_PYTORCH,
             FRAMEWORK_CAFFE2,
     };
     public static final Device[][] FRAMEWORKS_SUPPORTED_DEVICES = {
-            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite  // todo: can gpu run or not;
-//            {Device.CPU, Device.NNAPI},  // tflite
+//            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite  // todo: can gpu run or not;
+            {Device.CPU, Device.NNAPI},  // tflite
             {Device.CPU},  // pytorch
             {Device.CPU}   // caffe2
     };
@@ -176,7 +176,7 @@ public class Model {
     public static class ModelDir {
         public static final String MODELS_FILE = "models.json";
 
-        private final String dirPath;
+        private final String dirPath;// /storage/emulated/0/aiot/download/20201203_model_6_dataset_100x5/aiot/models/20201105_novgg
         private final ModelDesc modelDesc;
 
         private Info caffe2;
@@ -209,6 +209,8 @@ public class Model {
             if (!JUtil.isEmpty(tfliteL)) {
                 tflite.defaultModelName = tfliteL.get(0).getName();
                 tflite.names = ModelDesc.getNames(tfliteL);
+                tflite.object_detection_names=ModelDesc.getTaskNames(tfliteL,"object_detection");
+                tflite.image_classifiction_names=ModelDesc.getTaskNames(tfliteL,"image_classification");
                 tflite.generator = new TfLiteModelGenerator();
             }
         }
@@ -255,7 +257,9 @@ public class Model {
 
         public static class Info {
             public String defaultModelName = null;
-            public String[] names = null;
+            public String[] names = null;//all model names in model.json
+            public String[] object_detection_names = null;
+            public String[] image_classifiction_names = null;
             public IModelGenerator generator = null;
         }
 

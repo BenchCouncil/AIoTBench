@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_toStartOf="@+id/btn_download_download"
-            android:text="数据1"
+            android:text="data-1"
             android:textSize="18sp"/>
 
         <TextView
@@ -27,7 +27,7 @@
             android:layout_below="@+id/tv_download_name"
             android:layout_toStartOf="@+id/btn_download_download"
             android:layout_marginTop="8dp"
-            android:text="数据描述1"
+            android:text="desc-1"
             android:textSize="14sp"/>
 
         <TextView
@@ -37,17 +37,17 @@
             android:layout_below="@+id/tv_download_desc"
             android:layout_toStartOf="@+id/btn_download_download"
             android:layout_marginTop="8dp"
-            android:text="下载中：67%"
+            android:text="downloading：67%"
             android:textSize="14sp"/>
 
         <Button
             android:id="@+id/btn_download_download"
-            android:layout_width="72dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:text="下载"/>
+            android:text="Download"/>
     </RelativeLayout>
 
     <Button
@@ -57,5 +57,5 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="16dp"
-        android:text="返回"/>
+        android:text="Back"/>
 </RelativeLayout>

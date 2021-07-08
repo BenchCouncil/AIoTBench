@@ -115,7 +115,11 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
             resourceName =resource.name;
         }
         loadDataset();
-        loadWorkloads();
+        try {
+            loadWorkloads();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         mBtnGo.setOnClickListener(view -> onGo());
         mBtnGo.setClickable(true);
     }
@@ -158,7 +162,7 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
         return dataset != null;
     }
 
-    private void loadWorkloads() {
+    private void loadWorkloads() throws InterruptedException {
         if (!isDatasetOk()) {
             return;
         }
@@ -171,7 +175,7 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
         }
         LinkedList<WorkLoadStatus> ll = new LinkedList<>();
         for (String frameworkName : Model.FRAMEWORKS) {
-            for (String modelName : modelI.getModelDir().getInfo(frameworkName).names) {
+            for (String modelName : modelI.getModelDir().getInfo(frameworkName).image_classifiction_names) {
                 for (String deviceName : Model.Device.getNames(Model.getSupportedDevices(frameworkName))) {
                     // todo: maybe from config file;
                     WorkLoadStatus status = new WorkLoadStatus();
@@ -187,12 +191,11 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
 //        for (int i = 1; i < Model.FRAMEWORKS.length - 1; i++) {
 //            String modelName = modelI.getModelDir().getInfo("tflite").names[0];
 //            String deviceName = Model.Device.getNames(Model.getSupportedDevices("tflite"))[0];
-//            // todo: maybe from config file;
 //            WorkLoadStatus status = new WorkLoadStatus();
 //            status.framework = "tflite";
 //            status.model = modelName;
 //            status.device = deviceName;
-//            status.name = "tflite" + '_' + deviceName + '_' + modelName;  // todo: maybe from config file;
+//            status.name = "tflite" + '_' + deviceName + '_' + modelName;
 //            status.imgTotal = dataset.size();
 //            ll.add(status);
 //        }
@@ -379,7 +382,7 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
             return;
         }
         String modelName = status.model;
-        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).names)) {
+        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).image_classifiction_names)) {
             Util.showToast(R.string.not_implemented, this);
             return;
         }
@@ -414,6 +417,7 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
         }
         log.logln("start workload " + statusIndex + " name=" + status.name);
         model.doImageClassification();
+        //todo: do object detection and nlp tasks;
     }
 
     private void onImageClassified(AbstractModel model, int process, Object obj, int statusIndex, WorkLoadStatus workLoadStatus) {
@@ -454,7 +458,7 @@ public class ImageClassifyActivityV2 extends AppCompatActivity {
             if (model != null) {
                 model.destroy();
             }
-            workLoadStatus.endTime = System.currentTimeMillis();
+            workLoadStatus.endTime = System.currentTimeMillis();//note:endtime
             runOne(statusIndex + 1);
         }
         if (stopRunning) {

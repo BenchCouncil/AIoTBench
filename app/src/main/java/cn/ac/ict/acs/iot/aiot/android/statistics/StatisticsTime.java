@@ -14,7 +14,7 @@ public class StatisticsTime {
         public StartEndTime loadModel = new StartEndTime();
         public StartEndTime loadDataset = new StartEndTime();
 
-        public StartEndTime imageClassificationTotal = new StartEndTime();
+        public StartEndTime taskTotal = new StartEndTime();
         public StartEndTime[] images = null;
 
         public Statistics statistics;
@@ -44,7 +44,7 @@ public class StatisticsTime {
                         .append(", lastTime=").append(floatFormat(statistics.lastTime));
                 s.append(", avgWithoutFirstTime=").append(floatFormat(statistics.avgWithoutFirstTime));
             }
-            s.append("\nimage classification total = ").append(imageClassificationTotal.diff());
+            s.append("\ntotal time = ").append(taskTotal.diff());
             return s.toString();
         }
         private String floatFormat(double f) {
