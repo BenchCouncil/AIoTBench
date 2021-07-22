@@ -81,7 +81,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/ll_old_debug"
+        app:layout_constraintBottom_toTopOf="@+id/ll_super_resolution"
         app:layout_constraintLeft_toRightOf="parent"
         app:layout_constraintRight_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_quant_classify">
@@ -92,6 +92,23 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="object detection"/>
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/ll_super_resolution"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/ll_old_debug"
+        app:layout_constraintLeft_toRightOf="parent"
+        app:layout_constraintRight_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ll_object_detection">
+
+        <Button
+            android:id="@+id/btn_super_resolution"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="super resolution"/>
     </RelativeLayout>
     <RelativeLayout
         android:id="@+id/ll_old_debug"

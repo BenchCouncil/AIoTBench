@@ -21,4 +21,5 @@ public interface IModel {
      */
     void doImageClassification();
     void doObjectDetection();
+    void doSuperResolution();
 }

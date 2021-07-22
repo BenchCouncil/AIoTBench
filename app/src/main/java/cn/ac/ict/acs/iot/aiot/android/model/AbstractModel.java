@@ -31,6 +31,8 @@ public abstract class AbstractModel implements IModel {
 
     public static final int HANDLER_DO_IMAGE_CLASSIFICATION = 59250;
     public static final int HANDLER_DO_OBJECT_DETECTION= 69250;
+    public static final int HANDLER_DO_Super_Resolution= 79250;
+
 
 
     public final StatisticsTime.TimeRecord timeRecord;
@@ -87,6 +89,10 @@ public abstract class AbstractModel implements IModel {
     @Override
     public void doObjectDetection() {
         ThreadPoolUtil.run(this::doObjectDetectionContinue);
+    }
+    @Override
+    public void doSuperResolution() {
+        ThreadPoolUtil.run(this::doSuperResolutionContinue);
     }
     @WorkerThread
     protected void doImageClassificationContinue() {
@@ -245,28 +251,26 @@ public abstract class AbstractModel implements IModel {
         status.bitmapOri = BitmapFactory.decodeFile(imageFilePath);
         int previewWidth=status.bitmapOri.getWidth();
         int previewHeight=status.bitmapOri.getHeight();
-        status.bitmapCroped=Bitmap.createBitmap(300,300, Bitmap.Config.ARGB_8888);
-//        status.bitmapCroped = convertBitmap(status.bitmapOri);
+        status.bitmapCroped=Bitmap.createBitmap(getInputImageWidth(),getInputImageHeight(), Bitmap.Config.ARGB_8888);//300,300//note:2nd
+
+//        status.bitmapCroped = convertBitmap(status.bitmapOri);//note:1st
         Matrix frameToCropTransform = getTransformationMatrix(
-                previewWidth, previewHeight,
-                300, 300,
+                previewWidth, previewHeight, getInputImageWidth(), getInputImageHeight(),
                 90, false);
 
         Matrix cropToFrameTransform = new Matrix();
-        android.util.Log.i("hello-croptoframe",cropToFrameTransform.toShortString());
         frameToCropTransform.invert(cropToFrameTransform);
         Canvas canvas = new Canvas(status.bitmapCroped);
-        canvas.drawBitmap(status.bitmapOri, frameToCropTransform, null);
+        canvas.drawBitmap(status.bitmapOri, frameToCropTransform, null);//note:2nd new_way
         //todo:change the image-processing
         log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
-
         try {
             int[] imageSize = new int[] {status.bitmapCroped.getWidth(), status.bitmapCroped.getHeight()};
             log.loglnA("ic", "index", imageIndex, "bitmap.size", JJsonUtils.toJson(imageSize), "ic", "start", StatisticsTime.TimeRecord.time());
             StatisticsScore statistics = doObjectDetectionContinue(status.bitmapCroped, target);
 
             log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);
-            status.statistics.updateBy(statistics);
+//            status.statistics.updateBy(statistics);
             log.loglnA("ic", "index", imageIndex, "statistics", "end", StatisticsTime.TimeRecord.time());
         } catch (Exception e) {
             log.loglnA("ic", "index", imageIndex, "do image classification error", "exception", e);
@@ -290,10 +294,79 @@ public abstract class AbstractModel implements IModel {
     }
 
     @WorkerThread
+    protected void doSuperResolutionContinue() {
+
+        if (isDestroyed() || isPreDestroyed()) {
+            return;
+        }
+        workThreadRunning = true;
+        if (dataset == null || dataset.size() <= 0) {
+            sendMsg(dataset == null ? -1 : dataset.size(), null);
+            workThreadRunning = false;
+            return;
+        }
+        timeRecord.images = new StatisticsTime.TimeRecord.StartEndTime[dataset.size()];
+        Status status = new Status(scoreTopK);
+        sendMsg(-1, status);
+        timeRecord.taskTotal.setStart();
+        for (int i=0; i<dataset.size(); i++) {
+            if (isDestroyed() || isPreDestroyed()) {
+                break;
+            }
+            doSuperResolutionContinue(i, status);//一张图片做一次
+            sendMsg(i, status);
+        }
+        timeRecord.taskTotal.setEnd();
+        sendMsg(dataset.size(), status);
+        workThreadRunning = false;
+        if (isPreDestroyed() && !isDestroyed()) {
+            this.destroyed = true;
+            doDestroy();
+        }
+    }
+
+    @WorkerThread
+    protected void doSuperResolutionContinue(int imageIndex, Status status) {
+        StatisticsTime.TimeRecord.StartEndTime time = new StatisticsTime.TimeRecord.StartEndTime();
+        timeRecord.images[imageIndex] = time;
+        String imageFilePath = dataset.get(imageIndex);
+        int target = dataset.getClassIndex(imageIndex);//note:Ground Truth idx
+
+        time.setStart();
+        log.loglnA("ic", "index", imageIndex, "all", "start", time.start);
+
+        log.loglnA("ic", "index", imageIndex, "bitmap", "start", StatisticsTime.TimeRecord.time());
+        status.bitmapOri = BitmapFactory.decodeFile(imageFilePath);
+        System.out.println(imageFilePath);
+        status.bitmapCroped = convertBitmap(status.bitmapOri);
+        log.loglnA("ic", "index", imageIndex, "bitmap", "end", StatisticsTime.TimeRecord.time());
+
+        try {
+            int[] imageSize = new int[] {status.bitmapCroped.getWidth(), status.bitmapCroped.getHeight()};
+            log.loglnA("ic", "index", imageIndex, "bitmap.size", JJsonUtils.toJson(imageSize), "ic", "start", StatisticsTime.TimeRecord.time());
+            StatisticsScore statistics = doSuperResolutionContinue(status.bitmapCroped, target);
+
+            log.loglnA("ic", "index", imageIndex, "statistics", "data", statistics);
+//            status.statistics.updateBy(statistics);
+            log.loglnA("ic", "index", imageIndex, "statistics", "end", StatisticsTime.TimeRecord.time());
+        } catch (Exception e) {
+            log.loglnA("ic", "index", imageIndex, "do image classification error", "exception", e);
+            Log.e("ic", "do image classification error", e);
+        }
+        time.setEnd();
+        log.loglnA("ic", "index", imageIndex, "all", "end", time.end);
+        log.loglnA("ic", "index", imageIndex, "all", "end", time);
+    }
+
+    @WorkerThread
     protected abstract StatisticsScore doImageClassificationContinue(Bitmap bitmap, int target);
 
     @WorkerThread
     protected abstract StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target);
+
+    @WorkerThread
+    protected abstract StatisticsScore doSuperResolutionContinue(Bitmap bitmap, int target);
+
     private void sendMsg(int process, Status status) {
         Message message = handler.obtainMessage();
         message.what = what;

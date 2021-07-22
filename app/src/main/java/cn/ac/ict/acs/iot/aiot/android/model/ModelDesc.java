@@ -202,6 +202,11 @@ public class ModelDesc {
         private float[] norm_std_dev;
         private String labels;
         private String task;
+        private int num_detection;
+
+        public int getNum_detection() {
+            return num_detection;
+        }
 
         public String getTask() {
             return task;

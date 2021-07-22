@@ -59,8 +59,8 @@ public class Model {
             FRAMEWORK_CAFFE2,
     };
     public static final Device[][] FRAMEWORKS_SUPPORTED_DEVICES = {
-//            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite  // todo: can gpu run or not;
-            {Device.CPU, Device.NNAPI},  // tflite
+            {Device.CPU, Device.NNAPI, Device.GPU},  // tflite  // todo: can gpu run or not;
+//            {Device.CPU, Device.NNAPI},  // tflite
             {Device.CPU},  // pytorch
             {Device.CPU}   // caffe2
     };
@@ -211,6 +211,8 @@ public class Model {
                 tflite.names = ModelDesc.getNames(tfliteL);
                 tflite.object_detection_names=ModelDesc.getTaskNames(tfliteL,"object_detection");
                 tflite.image_classifiction_names=ModelDesc.getTaskNames(tfliteL,"image_classification");
+                tflite.super_resolution_names=ModelDesc.getTaskNames(tfliteL,"super_resolution");
+
                 tflite.generator = new TfLiteModelGenerator();
             }
         }
@@ -260,6 +262,7 @@ public class Model {
             public String[] names = null;//all model names in model.json
             public String[] object_detection_names = null;
             public String[] image_classifiction_names = null;
+            public String[] super_resolution_names = null;
             public IModelGenerator generator = null;
         }
 

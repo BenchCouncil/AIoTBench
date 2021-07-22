@@ -61,6 +61,8 @@ public class MainActivityV2 extends AppCompatActivity {
 //        findViewById(R.id.btn_block_go).setOnClickListener(view -> onBlockGo());
         findViewById(R.id.btn_old_debug).setOnClickListener(view -> onOldDebug());
         findViewById(R.id.btn_object_detection).setOnClickListener(view -> onObjectDetection());
+        findViewById(R.id.btn_super_resolution).setOnClickListener(view -> onSuperResolution());
+
         askPermission();
     }
 
@@ -142,6 +144,9 @@ public class MainActivityV2 extends AppCompatActivity {
     }
     private void onObjectDetection() {
         onBtn(ObjectDetectionActivity.class);
+    }
+    private void onSuperResolution() {
+        onBtn(SuperResolutionActivity.class);
     }
 }
 

@@ -140,6 +140,11 @@ public class Caffe2Models {
         protected StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target) {
             return null;
         }
+
+        @Override
+        protected StatisticsScore doSuperResolutionContinue(Bitmap bitmap, int target) {
+            return null;
+        }
     }
     public static class Caffe2ModelFromFile extends Caffe2Model {
         public Caffe2ModelFromFile(ModelDesc.Caffe2 desc, LogUtil.Log log, String initNetFilePath, String predictNetFilePath, String labelsFilePath) {

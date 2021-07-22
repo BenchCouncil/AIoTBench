@@ -12,9 +12,14 @@ public class DatasetDesc {//coordinate with the json file
 
     private ImageNet imagenet;
     private Coco coco;
+    private Div2k div2k;
 
     public Coco getCoco() {
         return coco;
+    }
+
+    public Div2k getDiv2k() {
+        return div2k;
     }
 
     public ImageNet getImagenet() {
@@ -54,4 +59,6 @@ public class DatasetDesc {//coordinate with the json file
     public static class ImageNet extends Desc {}//usage:DatasetDesc.ImageNet imageNetDesc
 
     public static class Coco extends Desc{}//usage:DatasetDesc.Coco cocoDesc
+
+    public static class Div2k extends Desc{}//usage:DatasetDesc.Div2k div2kDesc
 }

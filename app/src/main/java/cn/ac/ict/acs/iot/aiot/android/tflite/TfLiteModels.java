@@ -11,6 +11,7 @@ import com.github.labowenzi.commonj.log.Log;
 import java.io.IOException;
 import java.util.List;
 
+import cn.ac.ict.acs.iot.aiot.android.SuperResolutioner;
 import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
 import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
@@ -42,6 +43,7 @@ public class TfLiteModels {
 
         protected Classifier classifier;
         protected Detector detector;
+        protected SuperResolutioner superresolutioner;
 
         public TfLiteModel(@Nullable ModelDesc.Tflite modelDesc, LogUtil.Log log) {
             super(modelDesc, log);
@@ -55,29 +57,29 @@ public class TfLiteModels {
 
         @Override
         public int getInputImageWidth() {
-            int wFromModel = classifier.getImageSizeX();
+//            int wFromModel = classifier.getImageSizeX();
             int wFromDesc = super.getInputImageWidth();
-            if (wFromModel != wFromDesc) {
-                Object[] msg = {
-                        "ic", "error", "width from model and desc are not equal", "width from model=" + wFromModel, "width from desc=" + wFromDesc
-                };
-                log.loglnA(msg);
-                Log.e("ic", Util.arrToString(msg, 1));
-            }
+//            if (wFromModel != wFromDesc) {
+//                Object[] msg = {
+//                        "ic", "error", "width from model and desc are not equal", "width from model=" + wFromModel, "width from desc=" + wFromDesc
+//                };
+//                log.loglnA(msg);
+//                Log.e("ic", Util.arrToString(msg, 1));
+//            }
             return wFromDesc;
         }
 
         @Override
         public int getInputImageHeight() {
-            int hFromModel = classifier.getImageSizeY();
+//            int hFromModel = classifier.getImageSizeY();
             int hFromDesc = super.getInputImageHeight();
-            if (hFromModel != hFromDesc) {
-                Object[] msg = {
-                        "ic", "error", "height from model and desc are not equal", "height from model=" + hFromModel, "height from desc=" + hFromDesc
-                };
-                log.loglnA(msg);
-                Log.e("ic", Util.arrToString(msg, 1));
-            }
+//            if (hFromModel != hFromDesc) {
+//                Object[] msg = {
+//                        "ic", "error", "height from model and desc are not equal", "height from model=" + hFromModel, "height from desc=" + hFromDesc
+//                };
+//                log.loglnA(msg);
+//                Log.e("ic", Util.arrToString(msg, 1));
+//            }
             return hFromDesc;
         }
 
@@ -116,12 +118,26 @@ public class TfLiteModels {
             log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
 
             log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
-            final float[] scores = getDataAsFloatArray(results);
-            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
-            statistics.calc();
-            statistics.updateHit(target);
-            return statistics;
+//            final float[] scores = getDataAsFloatArray(results);
+//            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
+//            statistics.calc();
+//            statistics.updateHit(target);
+            return null;
         }
+
+        @Override
+        protected StatisticsScore doSuperResolutionContinue(Bitmap bitmap, int target) {
+            superresolutioner.processImage(bitmap);
+            log.loglnA("ic", "bitmap", bitmap, "ic", "end", StatisticsTime.TimeRecord.time());
+
+            log.loglnA("ic", "bitmap", bitmap, "statistics", "start", StatisticsTime.TimeRecord.time());
+//            final float[] scores = getDataAsFloatArray(results);
+//            StatisticsScore statistics = new StatisticsScore(scoreTopK, scores);
+//            statistics.calc();
+//            statistics.updateHit(target);
+            return null;
+        }
+
         private float[] getDataAsFloatArray(List<Recognition> results) {
             float[] ret = new float[dataset.getClassesInfo().getSize()];
             int resultsLen = results.size();
@@ -165,10 +181,17 @@ public class TfLiteModels {
                     detector = Detector.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
                     timeRecord.loadModel.setEnd();
                 }
+                else if (desc.getTask().equals("super_resolution")){
+                    timeRecord.loadModel.setStart();
+                    superresolutioner = SuperResolutioner.create(net_tflite_filepath, device, 1, labelsFilePath, desc, log);
+                    timeRecord.loadModel.setEnd();
+                }
 
                 log.logln("load model: " + timeRecord.loadModel);
             } catch (IOException e) {
                 classifier = null;
+                detector = null;
+                superresolutioner = null;
                 e.printStackTrace();
             }
         }

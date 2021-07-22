@@ -97,8 +97,11 @@ public class Dataset {
         if (datasetName.equals(DemoImage.NAME)) {
             return demoImage;
         }
-        if (datasetName.equals("coco2017")){
+        if (datasetName.equals("coco2017")) {
             return datasetDir.coco.getDataset(datasetName);
+        }
+        if (datasetName.equals("div2k")) {
+            return datasetDir.div2k.getDataset(datasetName);
         }
         return datasetDir.imagenet.getDataset(datasetName);
     }
@@ -114,6 +117,7 @@ public class Dataset {
          */
         private final ImageNet imagenet;
         private final Coco coco;
+        private final Div2k div2k;
 
         private String[] names;
 
@@ -122,21 +126,26 @@ public class Dataset {
             this.datasetDesc = JJsonUtils.fromJson(JIoUtil.readJson(dirPath + "/" + DATASETS_FILE), DatasetDesc.class);
             this.imagenet = new ImageNet(dirPath, datasetDesc.getImagenet());
             this.coco = new Coco(dirPath, datasetDesc.getCoco());
+            this.div2k = new Div2k(dirPath, datasetDesc.getDiv2k());
             init();
         }
 
         private void init() {
             List<DatasetDesc.ImageNet.Dataset> imageNetDatasets = datasetDesc.getImagenet().getDatasets();
             List<DatasetDesc.Coco.Dataset> cocoDatasets = datasetDesc.getCoco().getDatasets();
+            List<DatasetDesc.Div2k.Dataset> div2kDatasets = datasetDesc.getDiv2k().getDatasets();
 
-            this.names = new String[1 + imageNetDatasets.size()+cocoDatasets.size()];
+            this.names = new String[1 + imageNetDatasets.size() + cocoDatasets.size()];
             names[0] = DemoImage.NAME;
             int i;
-            for (i = 1; i <=imageNetDatasets.size() ; ++i) {
+            for (i = 1; i <= imageNetDatasets.size(); ++i) {
                 names[i] = imageNetDatasets.get(i - 1).getName();
             }
-            for (;i<names.length;i++){
-                names[i]=cocoDatasets.get(i-1-imageNetDatasets.size()).getName();
+            for (; i <= imageNetDatasets.size()+cocoDatasets.size(); i++) {
+                names[i] = cocoDatasets.get(i - 1 - imageNetDatasets.size()).getName();
+            }
+            for (; i<names.length;i++){
+                names[i]=div2kDatasets.get(i-1-imageNetDatasets.size()-cocoDatasets.size()).getName();
             }
         }
 
@@ -150,6 +159,10 @@ public class Dataset {
 
         public Coco getCoco() {
             return coco;
+        }
+
+        public Div2k getDiv2k() {
+            return div2k;
         }
 
         public String[] getNames() {

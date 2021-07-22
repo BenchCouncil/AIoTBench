@@ -7,7 +7,6 @@ import cn.ac.ict.acs.iot.aiot.android.model.AbstractModel;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
 import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsScore;
 import cn.ac.ict.acs.iot.aiot.android.statistics.StatisticsTime;
-import cn.ac.ict.acs.iot.aiot.android.tflite.TfLiteModels;
 import cn.ac.ict.acs.iot.aiot.android.util.DialogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.LogUtil;
 import cn.ac.ict.acs.iot.aiot.android.util.Util;
@@ -15,10 +14,6 @@ import cn.ac.ict.acs.iot.aiot.android.util.Util;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,7 +28,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.github.labowenzi.commonj.JJsonUtils;
 import com.github.labowenzi.commonj.JTimeUtil;
 import com.github.labowenzi.commonj.JUtil;
 import com.github.labowenzi.commonj.log.Log;
@@ -51,23 +45,14 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Locale;
 
-/**
- * Created by Chauncey on 21-6-18.
- */
-public class ObjectDetectionActivity  extends AppCompatActivity {
-
-
-    public static final String TAG = "OD";
-
-    public static final int TIME_RECORD_TOP_K = ImageClassifyActivity.TIME_RECORD_TOP_K;
-    public static final int SCORE_TOP_K = ImageClassifyActivity.SCORE_TOP_K;
-
+public class SuperResolutionActivity extends AppCompatActivity {
+    private static final int SCORE_TOP_K = 5;
+    private static final int TIME_RECORD_TOP_K = 3;
     private Button mBtnGo;
 
     private TvInfoGlobal mTvInfoGlobal;
     private TvInfoCurr mTvInfoCurr;
     private TvLog mTvLog;
-
 
     private String resourceName;
     private Model modelI;
@@ -81,12 +66,10 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
     private String log_path;
     private String result_filepath;
     private String procedure_filepath;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_object_detection);
-
+        setContentView(R.layout.activity_super_resolution);
         log_path = Environment.getExternalStorageDirectory().getAbsolutePath() + '/' + "aiot/log";
         mTvInfoGlobal = new TvInfoGlobal(findViewById(R.id.tv_info_global));
         mTvInfoCurr = new TvInfoCurr(findViewById(R.id.tv_info_curr));
@@ -106,7 +89,6 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         mTvLog.composeText();
         mTvLog.refreshTextView();
 
-
         DownloadInfo.ResourceOne resource = DownloadInfo.Resource.getInstance().getOne();
         if (resource == null) {
             resourceName = null;
@@ -118,8 +100,9 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         loadWorkloads();
         mBtnGo.setOnClickListener(view -> onGo());
         mBtnGo.setClickable(true);
-    }
 
+
+    }
     private void loadDataset() {
         if (JUtil.isEmpty(resourceName)) {
             dataset = null;
@@ -139,7 +122,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         } else if (datasetNames.length == 1) {
             datasetName = datasetNames[0];
         } else {
-            datasetName = "coco2017";  // not demo;
+            datasetName = "div2k";  // not demo;
         }
         if (JUtil.isEmpty(datasetName)) {
             dataset = null;
@@ -173,7 +156,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             modelI.setModelDir(modelI.getDirs()[0]);
         }
         LinkedList<WorkLoadStatus> ll = new LinkedList<>();
-        for (String modelName : modelI.getModelDir().getInfo("tflite").object_detection_names) {
+        for (String modelName : modelI.getModelDir().getInfo("tflite").super_resolution_names) {
             for (String deviceName : Model.Device.getNames(Model.getSupportedDevices("tflite"))) {
                 // todo: maybe from config file;
                 WorkLoadStatus status = new WorkLoadStatus();
@@ -203,53 +186,6 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         mTvInfoGlobal.workloadsTotal = statuses.length;
     }
 
-    private boolean isWorkloadsOk() {
-        return !JUtil.isEmpty(statuses);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (isRunning()) {
-            String title = "是否退出？";
-            String msg = "是否结束测试并退出？";
-            String posStr = "结束测试并退出";
-            DialogInterface.OnClickListener posL = (dialog, which) -> {
-                stopRunning();
-                super.onBackPressed();
-                dialog.dismiss();
-            };
-            String negStr = "取消";
-            DialogInterface.OnClickListener negL = (dialog, which) -> dialog.dismiss();
-            DialogUtil.dlg2(ObjectDetectionActivity.this, title, msg, posStr, posL, negStr, negL).show();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    private void onGo() {
-        if (isDatasetOk() && isWorkloadsOk()) {
-            startRunning();
-            mBtnGo.setClickable(false);
-        } else {
-            String title = "数据未下载";
-            String msg = "所需数据未下载或下载中，请从首页进入下载页等待下载完成";
-            String btnStr = "确定";
-            DialogInterface.OnClickListener btnL = (dialog, which) -> dialog.dismiss();
-            DialogUtil.dlg1(ObjectDetectionActivity.this, title, msg, btnStr, btnL).show();
-        }
-    }
-
-    private boolean isRunning() {
-        if (JUtil.isEmpty(statuses)) {
-            return false;
-        }
-        for (WorkLoadStatus status : statuses) {
-            if (status.isRunning()) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private void startRunning() {
         if (stopRunning) {
@@ -259,18 +195,55 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         runOne(0);
     }
 
+
+    private int RamInteger(long ramsize) {
+        int res = (int) (ramsize / (long) 1000000000);
+        if (res % 2 == 1) {
+            res = res + 1;
+        }
+        return res;
+    }
+    private void outputResultLog() {
+        String fileName = logName(this);
+        result_filepath = log_path + '/' + fileName;//note:new
+        LogUtil.Log log = LogUtil.Log.inLogDir(fileName);
+        log.logln("device:" + mTvInfoGlobal.deviceName);
+        log.logln("ram size:" + RamInteger(mTvInfoGlobal.deviceRamTotal));
+        log.logln("ram available size:" + mTvInfoGlobal.deviceRamAvailable);
+        log.logln("device fingerprint:" + mTvInfoGlobal.deviceFingerprint);
+        log.logln("device hardware:" + mTvInfoGlobal.hardware); //qcom
+        log.logln("device sdk int:" + mTvInfoGlobal.sdkInt); //29
+        log.logln("resource name:" + resourceName);
+        log.logln("image count:" + dataset.size());
+        log.logln("time total:" + (mTvInfoGlobal.endTime - mTvInfoGlobal.startTime) + "ms");
+//        log.logln("vips:" + vips(statuses, this.log));
+//        log.logln("vops:" + vops(statuses, this.log));
+        for (WorkLoadStatus status : statuses) {
+            log.logln("\n");
+            log.logln("workload");
+            log.logln("name:" + status.name);
+            log.logln("framework:" + status.framework);
+            log.logln("device:" + status.device);
+            log.logln("model:" + status.model);
+            log.logln("time_load:" + status.timeLoad + "ms");
+            log.logln("time_first_img:" + status.timeFirstImg + "ms");
+            log.logln("time_total:" + (status.endTime - status.startTime) + "ms");
+            log.logln("time_avg:" + status.avgTime() + "ms");
+            log.logln("time_sd:" + status.timeSd() + "ms");
+//            log.logln("accuracy:" + status.accuracy());
+        }
+    }
     private void runOne(int statusIndex) {
         if (statusIndex < 0 || statusIndex >= statuses.length) {
             mTvInfoGlobal.endTime = System.currentTimeMillis();
             if (statusIndex == statuses.length) {
                 mTvInfoGlobal.workloadsCurr = statusIndex;
-                mTvInfoGlobal.scoreTextTillNow = scoreText(0, statusIndex);
                 mTvInfoGlobal.composeText();
                 mTvInfoGlobal.refreshTextView();
             }
             outputResultLog();
             Util.showToast("all done", this);
-            final AlertDialog alertDialog = new AlertDialog.Builder(ObjectDetectionActivity.this).create();
+            final AlertDialog alertDialog = new AlertDialog.Builder(SuperResolutionActivity.this).create();
             alertDialog.show();
             /* 添加对话框自定义布局 */
             alertDialog.setContentView(R.layout.activity_popup_upload_windows);
@@ -359,7 +332,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    Toast.makeText(ObjectDetectionActivity.this, "upload done, thanks for your waiting!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(SuperResolutionActivity.this, "upload done, thanks for your waiting!", Toast.LENGTH_LONG).show();
 
                 }
             });
@@ -370,7 +343,6 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             return;
         }
         mTvInfoGlobal.workloadsCurr = statusIndex;
-        mTvInfoGlobal.scoreTextTillNow = scoreText(0, statusIndex);
         mTvInfoGlobal.composeText();
         mTvInfoGlobal.refreshTextView();
         WorkLoadStatus status = statuses[statusIndex];
@@ -381,7 +353,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             return;
         }
         String modelName = status.model;
-        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).object_detection_names)) {
+        if (!JUtil.inArray(modelName, modelI.getModelDir().getInfo(frameworkName).super_resolution_names)) {
             Util.showToast(R.string.not_implemented, this);
             return;
         }
@@ -407,8 +379,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
 
     private void runOneModel(int statusIndex, WorkLoadStatus status, AbstractModel model) {
         model.handler = new MHandler(this, model, statusIndex, status);
-        model.what = AbstractModel.HANDLER_DO_OBJECT_DETECTION;
-        model.scoreTopK = SCORE_TOP_K;
+        model.what = AbstractModel.HANDLER_DO_Super_Resolution;
         if (dataset != null) {
             model.setDataset(dataset);
         } else {
@@ -416,21 +387,32 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             return;
         }
         log.logln("start workload " + statusIndex + " name=" + status.name);
-        model.doObjectDetection();
+        model.doSuperResolution();
         //todo: do object detection and nlp tasks;
     }
-
-    private void onObjectDetected(AbstractModel model, int process, Object obj, int statusIndex, WorkLoadStatus workLoadStatus) {
+    private void onGo() {
+        if (isDatasetOk() && isWorkloadsOk()) {
+            startRunning();
+            mBtnGo.setClickable(false);
+        } else {
+            String title = "数据未下载";
+            String msg = "所需数据未下载或下载中，请从首页进入下载页等待下载完成";
+            String btnStr = "确定";
+            DialogInterface.OnClickListener btnL = (dialog, which) -> dialog.dismiss();
+            DialogUtil.dlg1(SuperResolutionActivity.this, title, msg, btnStr, btnL).show();
+        }
+    }
+    private void onSuperResolution(AbstractModel model, int process, Object obj, int statusIndex, WorkLoadStatus workLoadStatus) {
         AbstractModel.Status status = null;
         if (obj != null && !(obj instanceof AbstractModel.Status)) {
             Log.e("image classified data", "null or wrong type");
         } else {
             status = (AbstractModel.Status) obj;
         }
-        onObjectDetected(model, process, status, statusIndex, workLoadStatus);
+        onSuperResolution(model, process, status, statusIndex, workLoadStatus);
     }
 
-    private void onObjectDetected(AbstractModel model, int process, AbstractModel.Status status, int statusIndex, WorkLoadStatus workLoadStatus) {
+    private void onSuperResolution(AbstractModel model, int process, AbstractModel.Status status, int statusIndex, WorkLoadStatus workLoadStatus) {
         int processOri = process;
         boolean allDone = false;
         int total = dataset.size();
@@ -468,53 +450,10 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         }
     }
 
-    public static String logName(Context ctx) {
-        String deviceName = Build.MODEL;
-        long deviceRamTotal = Util.getTotalRamSize(ctx);
-        SimpleDateFormat simDateF = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
-        String dateText = simDateF.format(new Date());
-        String ramGB = String.valueOf(deviceRamTotal / (1000000000));
-        return deviceName + '_' + ramGB + '_' + dateText + '_' + "ObjectDetection";
+    private boolean isWorkloadsOk() {
+        return !JUtil.isEmpty(statuses);
     }
 
-    private int RamInteger(long ramsize) {
-        int res = (int) (ramsize / (long) 1000000000);
-        if (res % 2 == 1) {
-            res = res + 1;
-        }
-        return res;
-    }
-
-    private void outputResultLog() {
-        String fileName = logName(this);
-        result_filepath = log_path + '/' + fileName;//note:new
-        LogUtil.Log log = LogUtil.Log.inLogDir(fileName);
-        log.logln("device:" + mTvInfoGlobal.deviceName);
-        log.logln("ram size:" + RamInteger(mTvInfoGlobal.deviceRamTotal));
-        log.logln("ram available size:" + mTvInfoGlobal.deviceRamAvailable);
-        log.logln("device fingerprint:" + mTvInfoGlobal.deviceFingerprint);
-        log.logln("device hardware:" + mTvInfoGlobal.hardware); //qcom
-        log.logln("device sdk int:" + mTvInfoGlobal.sdkInt); //29
-        log.logln("resource name:" + resourceName);
-        log.logln("image count:" + dataset.size());
-        log.logln("time total:" + (mTvInfoGlobal.endTime - mTvInfoGlobal.startTime) + "ms");
-//        log.logln("vips:" + vips(statuses, this.log));
-//        log.logln("vops:" + vops(statuses, this.log));
-        for (WorkLoadStatus status : statuses) {
-            log.logln("\n");
-            log.logln("workload");
-            log.logln("name:" + status.name);
-            log.logln("framework:" + status.framework);
-            log.logln("device:" + status.device);
-            log.logln("model:" + status.model);
-            log.logln("time_load:" + status.timeLoad + "ms");
-            log.logln("time_first_img:" + status.timeFirstImg + "ms");
-            log.logln("time_total:" + (status.endTime - status.startTime) + "ms");
-            log.logln("time_avg:" + status.avgTime() + "ms");
-            log.logln("time_sd:" + status.timeSd() + "ms");
-//            log.logln("accuracy:" + status.accuracy());
-        }
-    }
 
     private void initProgramLog() {
         String fileName = "program_log_" + logName(this) + ".log";
@@ -522,119 +461,13 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         log = LogUtil.Log.inLogDir(fileName);
     }
 
-    private void stopRunning() {
-        if (stopRunning) {
-            return;
-        }
-        stopRunning = true;
-    }
-
-    private String scoreText(int start, int end) {
-        int cnt = end - start;
-        if (cnt <= 0) {
-            return "";
-        }
-        WorkLoadStatus[] statuses = new WorkLoadStatus[cnt];
-        System.arraycopy(this.statuses, start, statuses, 0, cnt);
-        return "vips=" + vips(statuses, log) + ", vops=" + vops(statuses, log);
-    }
-
-    public static double vips(WorkLoadStatus[] statuses, LogUtil.Log log) {
-        if (JUtil.isEmpty(statuses)) {
-            return 0;
-        }
-        double[] accuracies = new double[statuses.length];
-        double[] times = new double[statuses.length];
-        for (int i = 0; i < statuses.length; i++) {
-            WorkLoadStatus status = statuses[i];
-            accuracies[i] = status.accuracy();
-            times[i] = status.avgTime() / 1000.0;
-        }
-        return vips(accuracies, times, log);
-    }
-
-    public static double vips(double[] accuracies, double[] times, LogUtil.Log log) {
-        double sum = 0;
-        for (int i = 0; i < accuracies.length; i++) {
-            sum += accuracies[i] / times[i];
-        }
-//        double res = sum / accuracies.length;
-        double res = sum;
-        if (log != null) {
-            String text = "vips=" + res;
-            text += "  accuracy=" + JJsonUtils.toJson(accuracies);
-            text += "  time=" + JJsonUtils.toJson(times);
-            log.logln(text);
-        }
-        return res;
-    }
-
-    public static double vops(WorkLoadStatus[] statuses, LogUtil.Log log) {
-        if (JUtil.isEmpty(statuses)) {
-            return 0;
-        }
-        double[] accuracies = new double[statuses.length];
-        long[] flops = new long[statuses.length];
-        double[] times = new double[statuses.length];
-        for (int i = 0; i < statuses.length; i++) {
-            WorkLoadStatus status = statuses[i];
-            accuracies[i] = status.accuracy();
-            times[i] = status.avgTime() / 1000.0;
-            flops[i] = flopsFromModel(status.model);
-            if (log != null) {
-                log.logln("flops=" + flops[i] + "  model=" + status.model);
-            }
-        }
-        return vops(accuracies, flops, times, log);
-    }
-
-    public static double vops(double[] accuracies, long[] flops, double[] times, LogUtil.Log log) {
-        double sum = 0;
-        for (int i = 0; i < accuracies.length; i++) {
-            sum += accuracies[i] * flops[i] / times[i];
-        }
-//        double res = sum / accuracies.length;
-        double res = sum;
-        if (log != null) {
-            String text = "vops=" + res;
-            text += "  accuracy=" + JJsonUtils.toJson(accuracies);
-            text += "  flops=" + JJsonUtils.toJson(flops);
-            text += "  time=" + JJsonUtils.toJson(times);
-            log.logln(text);
-        }
-        return res;
-    }
-
-    public static final String[] FLOPS_MODEL_NAME = {
-            // todo: names from model name;
-            "resnet50",
-            "inception_v3",
-            "densenet121",
-            "squeezenet",
-            "mobilenet_v2",
-            "mnasnet",
-    };
-    public static final long[] FLOPS_FLOPS = {
-            3800,
-            5000,
-            2800,
-            833,
-            300,
-            315,
-    };
-
-    public static long flopsFromModel(String modelName) {
-        if (JUtil.isEmpty(modelName)) {
-            return 1;
-        }
-        int index = -1;
-        for (int i = 0; i < FLOPS_MODEL_NAME.length; i++) {
-            if (modelName.equalsIgnoreCase(FLOPS_MODEL_NAME[i])) {
-                index = i;
-                break;
-            }
-        }
-        return index < 0 ? 1 : FLOPS_FLOPS[index];
+    public static String logName(Context ctx) {
+        String deviceName = Build.MODEL;
+        long deviceRamTotal = Util.getTotalRamSize(ctx);
+        SimpleDateFormat simDateF = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        String dateText = simDateF.format(new Date());
+        String ramGB = String.valueOf(deviceRamTotal / (1000000000));
+        return deviceName + '_' + ramGB + '_' + dateText + '_' + "SuperResolution";
     }
 
     private class TvData {
@@ -671,7 +504,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         public long startTime;//整个activity任务开始时间
         public long endTime;//整个acti任务全部结束的时间
 
-        public String scoreTextTillNow;
+//        public String scoreTextTillNow;//vips/vops till now
 
         public TvInfoGlobal(TextView mTv) {
             super(mTv);
@@ -680,7 +513,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
         }
 
         public void init() {
-            ObjectDetectionActivity ctx = ObjectDetectionActivity.this;
+            SuperResolutionActivity ctx = SuperResolutionActivity.this;
             deviceFingerprint = Build.FINGERPRINT;
             hardware = Build.HARDWARE;
             sdkInt = Build.VERSION.SDK_INT;
@@ -723,7 +556,7 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             }
             StringBuilder s = new StringBuilder();
             s.append("workload name: ").append(status.name);
-            s.append("\nimg done: ").append(status.imgCurr).append('/').append(status.imgTotal);
+            s.append("\ndata done: ").append(status.imgCurr).append('/').append(status.imgTotal);
             long t = status.timeUsed();
             String text = JTimeUtil.timeElapsedHours(t);
             s.append("\ntime: ").append(text);
@@ -851,12 +684,12 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
     }
 
     private static class MHandler extends Handler {
-        protected final WeakReference<ObjectDetectionActivity> mTarget;
+        protected final WeakReference<SuperResolutionActivity> mTarget;
         protected final WeakReference<AbstractModel> mModel;
         protected final int statusIndex;
         protected final WorkLoadStatus status;
 
-        public MHandler(ObjectDetectionActivity target, AbstractModel model, int statusIndex, WorkLoadStatus status) {
+        public MHandler(SuperResolutionActivity target, AbstractModel model, int statusIndex, WorkLoadStatus status) {
             this.mTarget = new WeakReference<>(target);
             this.mModel = new WeakReference<>(model);
             this.statusIndex = statusIndex;
@@ -868,18 +701,18 @@ public class ObjectDetectionActivity  extends AppCompatActivity {
             super.handleMessage(msg);
             int what = msg.what;
             switch (what) {
-                case AbstractModel.HANDLER_DO_OBJECT_DETECTION: {
-                    onObjectDetected(msg);
+                case AbstractModel.HANDLER_DO_Super_Resolution: {
+                    onSuperResolution(msg);
                     break;
                 }
             }
         }
 
-        private void onObjectDetected(Message msg) {
-            ObjectDetectionActivity target = mTarget.get();
+        private void onSuperResolution(Message msg) {
+            SuperResolutionActivity target = mTarget.get();
             AbstractModel model = mModel.get();
             if (target != null) {
-                target.onObjectDetected(model, msg.arg2, msg.obj, statusIndex, status);
+                target.onSuperResolution(model, msg.arg2, msg.obj, statusIndex, status);
             } else {
                 if (model != null) {
                     model.destroy();

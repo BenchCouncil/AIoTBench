@@ -89,6 +89,11 @@ public class PyTorchModels {
         protected StatisticsScore doObjectDetectionContinue(Bitmap bitmap, int target) {
             return null;
         }
+
+        @Override
+        protected StatisticsScore doSuperResolutionContinue(Bitmap bitmap, int target) {
+            return null;
+        }
     }
 
     public static class PyTorchModelFromFile extends PyTorchModel {

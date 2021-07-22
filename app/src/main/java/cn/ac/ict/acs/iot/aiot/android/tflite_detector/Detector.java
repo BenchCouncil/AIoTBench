@@ -41,6 +41,9 @@ import org.tensorflow.lite.support.image.ops.ResizeOp;
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 //import org.tensorflow.lite.support.metadata.MetadataExtractor;
+import org.tensorflow.lite.task.vision.detector.Detection;
+import org.tensorflow.lite.task.vision.detector.ObjectDetector;
+import org.tensorflow.lite.task.vision.detector.ObjectDetector.ObjectDetectorOptions;
 
 import cn.ac.ict.acs.iot.aiot.android.DownloadInfo;
 import cn.ac.ict.acs.iot.aiot.android.model.Model;
@@ -65,7 +68,7 @@ public class Detector {
     private static final String TAG = "ObjectDetection";
 
     // Only return this many results.
-    private static final int NUM_DETECTIONS = 10;
+    private static int NUM_DETECTIONS = 10;
     // Float model
     private static final float IMAGE_MEAN = 127.5f;
     private static final float IMAGE_STD = 127.5f;
@@ -105,7 +108,8 @@ public class Detector {
     private MappedByteBuffer tfLiteModel;
     private static Interpreter.Options tfliteOptions = new Interpreter.Options();
     protected Interpreter tfLite;
-
+    private ObjectDetector objectDetector;
+    protected ObjectDetectorOptions.Builder optionsBuilder;
     /**
      * Memory-map the model file in Assets.
      */
@@ -135,8 +139,11 @@ public class Detector {
         DownloadInfo.ResourceOne resource = DownloadInfo.Resource.getInstance().getOne();
         String resourceName = resource.name;
         this.needToBgr = needToBgr;
-        String dirPathModels = DownloadInfo.getDirPathModels(resourceName);//note:error
         this.tfLiteModel = loadModelFile(net_tflite_filepath);
+        optionsBuilder = ObjectDetectorOptions.builder().setMaxResults(NUM_DETECTIONS);//note:2nd
+
+        objectDetector = ObjectDetector.createFromBufferAndOptions(this.tfLiteModel, optionsBuilder.build());//note:2nd
+
         //todo:read lable.json文件
 //        MetadataExtractor metadata = new MetadataExtractor(modelFile);//lable
 //        try (BufferedReader br =
@@ -197,7 +204,8 @@ public class Detector {
             LogUtil.Log log)
             throws IOException {
         boolean needToBgr = modelDesc != null && modelDesc.needToBgr();
-        return new Detector(net_tflite_filepath, device, numThreads, labelFilename, needToBgr, true, log);
+        NUM_DETECTIONS=modelDesc.getNum_detection();
+        return new Detector(net_tflite_filepath, device, numThreads,labelFilename, needToBgr, true, log);
     }
 
     private Bitmap loadImage(final Bitmap bitmap) {
@@ -292,43 +300,49 @@ public class Detector {
 
         return matrix;
     }
-    public List<Recognition> recognizeImage(Bitmap bitmap) {
+    public List<Recognition> recognizeImage(final Bitmap bitmap) {
+        // Log this method so that it can be analyzed with systrace.
+        Trace.beginSection("recognizeImage");
+        System.out.println(TensorImage.fromBitmap(bitmap));
+        List<Detection> results = objectDetector.detect(TensorImage.fromBitmap(bitmap));
+
+        // Converts a list of {@link Detection} objects into a list of {@link Recognition} objects
+        // to match the interface of other inference method, such as using the <a
+        // href="https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android/lib_interpreter">TFLite
+        // Java API.</a>.
+        final ArrayList<Recognition> recognitions = new ArrayList<>();
+        int cnt = 0;
+        for (Detection detection : results) {
+//            System.out.println(detection.getCategories().get(0).getLabel());
+//            System.out.println(detection.getCategories().get(0).getScore());
+//            System.out.println(detection.getBoundingBox().bottom+" "
+//                    +detection.getBoundingBox().top+" "
+//                    +detection.getBoundingBox().left+" "
+//                    +detection.getBoundingBox().right);
+            recognitions.add(
+                    new Recognition(
+                            "" + cnt,
+                            cnt++,
+                            detection.getCategories().get(0).getLabel(),
+                            detection.getCategories().get(0).getScore(),
+                            detection.getBoundingBox()));
+        }
+        Trace.endSection(); // "recognizeImage"
+        return recognitions;
+    }
+    public List<Recognition> recognizeImage_old(Bitmap bitmap) {
         // Log this method so that it can be analyzed with systrace.
         Trace.beginSection("recognizeImage");
 
         Trace.beginSection("preprocessBitmap");
         // Preprocess the image data from 0-255 int to normalized float based
         // on the provided parameters.
-        bitmap=loadImage(bitmap);//640*426__>300*300
-//
-//        Bitmap croppedBitmap = Bitmap.createBitmap(imageSizeY, imageSizeX, Bitmap.Config.ARGB_8888);
-//        int previewWidth = bitmap.getWidth();
-//        int previewHeight = bitmap.getHeight();
-//        Matrix frameToCropTransform = getTransformationMatrix(
-//                previewWidth, previewHeight,
-//                imageSizeY, imageSizeX,
-//                0, false);
-//        Matrix cropToFrameTransform = new Matrix();
-//        frameToCropTransform.invert(cropToFrameTransform);
-//        Canvas canvas = new Canvas(croppedBitmap);
-//        Bitmap previewImage= null;
-//        try {
-//            previewImage = loadImage("img/dog.jpg");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        canvas.drawBitmap(previewImage, frameToCropTransform, null);
-//
-//        System.out.println(croppedBitmap.getHeight());
-//        System.out.println(croppedBitmap.getWidth());
-//
-//        System.out.println(previewImage.getHeight());
-//        System.out.println(previewImage.getWidth());
-
+//        bitmap=loadImage(bitmap);//640*426__>300*300
 
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         inputSize=imageSizeX;
         imgData.rewind();
+
         for (int i = 0; i < inputSize; ++i) {
             for (int j = 0; j < inputSize; ++j) {
                 int pixelValue = intValues[i * inputSize + j];
@@ -344,10 +358,12 @@ public class Detector {
                 }
             }
         }
+
         Trace.endSection(); // preprocessBitmap
 
         // Copy the input data into TensorFlow.
         Trace.beginSection("feed");
+//        System.out.println(NUM_DETECTIONS);
         outputLocations = new float[1][NUM_DETECTIONS][4];
         outputClasses = new float[1][NUM_DETECTIONS];
         outputScores = new float[1][NUM_DETECTIONS];
@@ -362,7 +378,10 @@ public class Detector {
 
         // Run the inference call.
         Trace.beginSection("run");
+        long s=System.currentTimeMillis();
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+        long e=System.currentTimeMillis();
+        System.out.println(e-s);
         Trace.endSection();
 
         // Show the best detections.
@@ -372,18 +391,18 @@ public class Detector {
         // because on some models, they don't always output the same total number of detections
         // For example, your model's NUM_DETECTIONS = 20, but sometimes it only outputs 16 predictions
         // If you don't use the output's numDetections, you'll get nonsensical data
-        System.out.println(numDetections[0]);
+//        System.out.println(numDetections[0]);
         int numDetectionsOutput =
                 min(NUM_DETECTIONS, (int) numDetections[0]); // cast from float to integer, use min for safety
-        System.out.println(numDetectionsOutput);
+//        System.out.println(numDetectionsOutput);
         final ArrayList<Recognition> recognitions = new ArrayList<>(numDetectionsOutput);
         for (int i = 0; i < numDetectionsOutput; ++i) {
-            System.out.println(outputLocations[0][i][0]*inputSize+" "
-                    +outputLocations[0][i][0]*inputSize+" "
-                    +outputLocations[0][i][3]*inputSize+" "
-                    +outputLocations[0][i][2]*inputSize);
-            System.out.println(outputClasses[0][i]);
-            System.out.println(outputScores[0][i]);
+//            System.out.println(outputLocations[0][i][0]*inputSize+" "
+//                    +outputLocations[0][i][0]*inputSize+" "
+//                    +outputLocations[0][i][3]*inputSize+" "
+//                    +outputLocations[0][i][2]*inputSize);
+//            System.out.println(outputClasses[0][i]);
+//            System.out.println(outputScores[0][i]);
 
             final RectF detection =
                     new RectF(
